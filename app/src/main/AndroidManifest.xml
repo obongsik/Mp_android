@@ -33,7 +33,14 @@
             android:name=".MainActivity"
             android:exported="true" />
 
+<!--        목표설정 액티비티 (목표설정 버튼 누를 시 이동)-->
+        <activity android:name=".AddGoalActivity" />
+
+<!--        설정된 목표 확인용 액티비티 (임시- 저장버튼 누를 시 이동)-->
+        <activity android:name=".GoalDetailsActivity" />
+
     </application>
 
 </manifest>
 
+ㅇ
