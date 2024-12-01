@@ -1,10 +1,13 @@
 <?xml version="1.0" encoding="utf-8"?>
 <LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    xmlns:tools="http://schemas.android.com/tools"
     android:layout_width="match_parent"
     android:layout_height="match_parent"
     android:orientation="vertical"
     android:gravity="center"
-    android:padding="16dp">
+    android:padding="16dp"
+    tools:context=".RegisterActivity">
 
     <!-- 이름 입력 -->
     <EditText
@@ -23,13 +26,23 @@
         android:layout_marginTop="8dp" />
 
     <!-- 비밀번호 입력 -->
-    <EditText
-        android:id="@+id/edit_password"
+    <com.google.android.material.textfield.TextInputLayout
+        android:id="@+id/password_input_layout"
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
-        android:hint="비밀번호"
-        android:inputType="textPassword"
-        android:layout_marginTop="8dp" />
+        android:layout_marginTop="8dp"
+        app:helperText="4자리 이상의 숫자만 가능합니다.">
+
+        <!-- 비밀번호 EditText -->
+        <EditText
+            android:id="@+id/edit_password"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:hint="비밀번호"
+            android:inputType="textPassword"
+            android:importantForAccessibility="yes"
+            android:importantForAutofill="yes" />
+    </com.google.android.material.textfield.TextInputLayout>
 
     <!-- 회원가입 버튼 -->
     <Button
@@ -40,3 +53,5 @@
         android:layout_marginTop="16dp" />
 
 </LinearLayout>
+
+

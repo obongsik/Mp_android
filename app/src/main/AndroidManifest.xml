@@ -33,7 +33,12 @@
             android:name=".MainActivity"
             android:exported="true" />
 
+        <!-- 통계 액티비티 -->
+        <activity
+            android:name=".StatisticsActivity"
+            android:exported="true" />
     </application>
 
 </manifest>
+
 

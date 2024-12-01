@@ -18,6 +18,10 @@ public class MainActivity extends AppCompatActivity {
 
         UserManager userManager = new UserManager(this);
 
+        // 로그인이 완료되면 MainActivity에서 바로 StatisticsActivity로 이동
+        startActivity(new Intent(MainActivity.this, StatisticsActivity.class));
+        finish();  // MainActivity 종료
+
         btnLogout.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View v) {

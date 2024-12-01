@@ -2,3 +2,11 @@
 plugins {
     id("com.android.application") version "8.2.0" apply false
 }
+
+allprojects {
+    repositories {
+        google()
+        mavenCentral()  // Maven Central 추가
+
+    }
+}

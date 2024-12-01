@@ -2,7 +2,6 @@ package com.example.habittracker;
 
 import android.content.Intent;
 import android.os.Bundle;
-import android.view.View;
 import android.widget.Button;
 import android.widget.EditText;
 import android.widget.TextView;
@@ -25,6 +24,8 @@ public class LoginActivity extends AppCompatActivity {
         // 회원가입 텍스트
         TextView signUpText = findViewById(R.id.text_sign_up);
 
+        HabitDatabaseHelper dbHelper = new HabitDatabaseHelper(this);
+
         // 로그인 버튼 클릭 리스너
         loginButton.setOnClickListener(v -> {
             String email = emailEditText.getText().toString();
@@ -33,12 +34,17 @@ public class LoginActivity extends AppCompatActivity {
             if (email.isEmpty() || password.isEmpty()) {
                 Toast.makeText(this, "이메일과 비밀번호를 입력하세요.", Toast.LENGTH_SHORT).show();
             } else {
-                // 로그인 로직 (예: 서버와의 통신)
-                Toast.makeText(this, "로그인 성공!", Toast.LENGTH_SHORT).show();
-                // 로그인 성공 시 MainActivity로 이동
-                Intent intent = new Intent(LoginActivity.this, MainActivity.class);
-                startActivity(intent);
-                finish();
+                // 로그인 로직 (데이터베이스에서 이메일과 비밀번호 확인)
+                boolean isValid = dbHelper.checkUser(email, password);
+                if (isValid) {
+                    Toast.makeText(this, "로그인 성공!", Toast.LENGTH_SHORT).show();
+                    // 로그인 성공 시 MainActivity로 이동
+                    Intent intent = new Intent(LoginActivity.this, MainActivity.class);
+                    startActivity(intent);
+                    finish();
+                } else {
+                    Toast.makeText(this, "잘못된 이메일 또는 비밀번호입니다.", Toast.LENGTH_SHORT).show();
+                }
             }
         });
 
