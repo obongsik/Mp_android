@@ -8,8 +8,6 @@ import android.widget.TextView;
 import androidx.appcompat.app.AppCompatActivity;
 
 public class GoalDetailsActivity extends AppCompatActivity {
-    //데이터 전송 확인 용 임시파일
-
     private TextView tvHabitDetails;
 
     @Override
@@ -30,16 +28,28 @@ public class GoalDetailsActivity extends AppCompatActivity {
         Cursor cursor = null;
 
         try {
+            // UserManager를 사용해 현재 로그인한 사용자 ID 가져오기
+            UserManager userManager = new UserManager(this);
+            String userId = userManager.getUserId();
+
+            if (userId == null) {
+                tvHabitDetails.setText("로그인 정보를 확인할 수 없습니다.");
+                return;
+            }
+
             db = dbHelper.getReadableDatabase();
 
-            // "Goals" 테이블에서 goal_name 데이터 조회 (정렬 없이)
-            cursor = db.rawQuery("SELECT goal_name FROM Goals", null);
+            // Goal 테이블에서 현재 로그인한 사용자의 데이터만 조회
+            cursor = db.rawQuery(
+                    "SELECT goal_name FROM Goal WHERE user_id = ?",
+                    new String[]{userId}
+            );
 
             StringBuilder habitDetails = new StringBuilder();
 
             // 데이터가 없을 경우 처리
             if (cursor.getCount() == 0) {
-                habitDetails.append("No habits found.\n");
+                habitDetails.append("No habits found for the current user.\n");
             } else {
                 // 데이터 읽기
                 while (cursor.moveToNext()) {
@@ -55,6 +65,4 @@ public class GoalDetailsActivity extends AppCompatActivity {
             if (db != null) db.close();
         }
     }
-
-
 }

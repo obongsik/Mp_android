@@ -1,4 +1,3 @@
-// UserManager.java
 package com.example.habittracker;
 
 import android.content.Context;
@@ -20,6 +19,7 @@ public class UserManager {
         editor = sharedPreferences.edit();
     }
 
+    // 사용자 정보 저장
     public void saveUser(String userId, String userName, String email, String password) {
         editor.putString(KEY_USER_ID, userId);
         editor.putString(KEY_USER_NAME, userName);
@@ -29,24 +29,29 @@ public class UserManager {
         editor.apply();
     }
 
-    public boolean login(String email, String password) {
-        String savedEmail = sharedPreferences.getString(KEY_EMAIL, null);
-        String savedPassword = sharedPreferences.getString(KEY_PASSWORD, null);
-        if (email.equals(savedEmail) && password.equals(savedPassword)) {
-            editor.putBoolean(KEY_IS_LOGGED_IN, true);
-            editor.apply();
-            return true;
-        }
-        return false;
+    // 로그인 상태 확인
+    public boolean isLoggedIn() {
+        return sharedPreferences.getBoolean(KEY_IS_LOGGED_IN, false);
     }
 
+    // 로그아웃 처리
     public void logout() {
         editor.putBoolean(KEY_IS_LOGGED_IN, false);
         editor.apply();
     }
 
-    public boolean isLoggedIn() {
-        return sharedPreferences.getBoolean(KEY_IS_LOGGED_IN, false);
+    // 사용자 ID 가져오기
+    public String getUserId() {
+        return sharedPreferences.getString(KEY_USER_ID, null);
+    }
+
+    // 사용자 이름 가져오기
+    public String getUserName() {
+        return sharedPreferences.getString(KEY_USER_NAME, null);
+    }
+
+    // 사용자 이메일 가져오기
+    public String getEmail() {
+        return sharedPreferences.getString(KEY_EMAIL, null);
     }
 }
-
