@@ -1,4 +1,4 @@
-package com.example.alarm_group;
+package com.example.habittracker;
 
 import android.content.Context;
 import android.database.sqlite.SQLiteDatabase;

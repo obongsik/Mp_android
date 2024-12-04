@@ -1,0 +1,113 @@
+<androidx.appcompat.widget.LinearLayoutCompat xmlns:android="http://schemas.android.com/apk/res/android"
+    android:layout_width="match_parent"
+    android:layout_height="wrap_content"
+    android:orientation="vertical"
+    android:padding="16dp">
+
+    <!-- 목표 이름 입력 -->
+    <EditText
+        android:id="@+id/et_goal_name"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:hint="목표를 입력하세요" />
+
+    <!-- 시작 날짜 -->
+    <EditText
+        android:id="@+id/et_start_date"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:hint="시작 날짜를 입력하세요 (YYYY-MM-DD)" />
+
+    <!-- 종료 날짜 -->
+    <EditText
+        android:id="@+id/et_end_date"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:hint="종료 날짜를 입력하세요 (선택 사항)" />
+
+    <!-- 리마인더 활성화 -->
+    <Switch
+        android:id="@+id/sw_reminder_enabled"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:text="리마인더 활성화" />
+
+    <!-- 반복 요일 선택 -->
+    <TextView
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:text="반복 요일" />
+
+    <LinearLayout
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:orientation="horizontal">
+
+        <!-- 월요일 -->
+        <CheckBox
+            android:id="@+id/cb_monday"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="월" />
+
+        <!-- 화요일 -->
+        <CheckBox
+            android:id="@+id/cb_tuesday"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="화" />
+
+        <!-- 수요일 -->
+        <CheckBox
+            android:id="@+id/cb_wednesday"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="수" />
+
+        <!-- 목요일 -->
+        <CheckBox
+            android:id="@+id/cb_thursday"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="목" />
+
+        <!-- 금요일 -->
+        <CheckBox
+            android:id="@+id/cb_friday"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="금" />
+
+        <!-- 토요일 -->
+        <CheckBox
+            android:id="@+id/cb_saturday"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="토" />
+
+        <!-- 일요일 -->
+        <CheckBox
+            android:id="@+id/cb_sunday"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="일" />
+    </LinearLayout>
+
+
+    <!-- 하루 반복 횟수 -->
+    <EditText
+        android:id="@+id/et_target_count"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:hint="하루에 몇 번 반복하시겠습니까?"
+        android:inputType="number" />
+
+    <!-- 저장 버튼 -->
+    <Button
+        android:id="@+id/btn_save_habit"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_gravity="center"
+        android:text="저장" />
+
+</androidx.appcompat.widget.LinearLayoutCompat>
