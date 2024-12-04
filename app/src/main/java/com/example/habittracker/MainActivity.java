@@ -30,6 +30,7 @@ public class MainActivity extends AppCompatActivity {
 
         // 버튼 초기화
         btnLogout = findViewById(R.id.btnLogout);
+        btnGoalSetting = findViewById(R.id.btnGoalSetting);
 
         // 로그아웃 버튼 클릭 리스너
         btnLogout.setOnClickListener(new View.OnClickListener() {
