@@ -1,0 +1,50 @@
+<?xml version="1.0" encoding="utf-8"?>
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    android:orientation="vertical"
+    android:padding="16dp">
+
+    <!-- 월별 통계 제목 -->
+    <TextView
+        android:id="@+id/monthTextView"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:text="월별 성취도"
+        android:textSize="18sp"
+        android:textStyle="bold"
+        android:layout_marginBottom="10dp"/>
+
+    <!-- 월별 성취도 리스트 표시용 RecyclerView -->
+    <androidx.recyclerview.widget.RecyclerView
+        android:id="@+id/monthRecyclerView"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:layout_marginBottom="16dp"/>
+
+    <!-- 주별 통계 제목 -->
+    <TextView
+        android:id="@+id/weekTextView"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:text="주별 성취도"
+        android:textSize="18sp"
+        android:textStyle="bold"
+        android:layout_marginBottom="10dp"/>
+
+    <!-- 주별 성취도 리스트 표시용 RecyclerView -->
+    <androidx.recyclerview.widget.RecyclerView
+        android:id="@+id/weekRecyclerView"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:layout_marginBottom="16dp"/>
+
+    <!-- 성취도 계산 후 결과를 표시할 텍스트뷰 -->
+    <TextView
+        android:id="@+id/achievementRateTextView"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:text="성취도: 0%"
+        android:textSize="16sp"
+        android:layout_marginTop="16dp"/>
+</LinearLayout>
