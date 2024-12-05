@@ -1,0 +1,2359 @@
+Index: app/src/main/java/com/example/habittracker/LoginActivity.java
+IDEA additional info:
+Subsystem: com.intellij.openapi.diff.impl.patch.BaseRevisionTextPatchEP
+<+>package com.example.habittracker;\r\n\r\nimport android.content.Intent;\r\nimport android.os.Bundle;\r\nimport android.view.View;\r\nimport android.widget.Button;\r\nimport android.widget.EditText;\r\nimport android.widget.TextView;\r\nimport android.widget.Toast;\r\n\r\nimport androidx.appcompat.app.AppCompatActivity;\r\n\r\npublic class LoginActivity extends AppCompatActivity {\r\n\r\n    @Override\r\n    protected void onCreate(Bundle savedInstanceState) {\r\n        super.onCreate(savedInstanceState);\r\n        setContentView(R.layout.activity_login);\r\n\r\n        // 로그인 버튼\r\n        Button loginButton = findViewById(R.id.btn_login);\r\n        EditText emailEditText = findViewById(R.id.edit_email);\r\n        EditText passwordEditText = findViewById(R.id.edit_password);\r\n\r\n        // 회원가입 텍스트\r\n        TextView signUpText = findViewById(R.id.text_sign_up);\r\n\r\n        // 로그인 버튼 클릭 리스너\r\n        loginButton.setOnClickListener(v -> {\r\n            String email = emailEditText.getText().toString();\r\n            String password = passwordEditText.getText().toString();\r\n\r\n            if (email.isEmpty() || password.isEmpty()) {\r\n                Toast.makeText(this, \"이메일과 비밀번호를 입력하세요.\", Toast.LENGTH_SHORT).show();\r\n            } else {\r\n                // 로그인 로직 (예: 서버와의 통신)\r\n                Toast.makeText(this, \"로그인 성공!\", Toast.LENGTH_SHORT).show();\r\n                // 로그인 성공 시 MainActivity로 이동\r\n                Intent intent = new Intent(LoginActivity.this, MainActivity.class);\r\n                startActivity(intent);\r\n                finish();\r\n            }\r\n        });\r\n\r\n        // 회원가입 버튼 클릭 리스너\r\n        signUpText.setOnClickListener(v -> {\r\n            // RegisterActivity로 이동\r\n            Intent intent = new Intent(LoginActivity.this, RegisterActivity.class);\r\n            startActivity(intent);\r\n        });\r\n    }\r\n}
+Subsystem: com.intellij.openapi.diff.impl.patch.CharsetEP
+<+>UTF-8
+===================================================================
+diff --git a/app/src/main/java/com/example/habittracker/LoginActivity.java b/app/src/main/java/com/example/habittracker/LoginActivity.java
+--- a/app/src/main/java/com/example/habittracker/LoginActivity.java	(revision a187b657d3c68c5f8182792ffcde460510670d02)
++++ b/app/src/main/java/com/example/habittracker/LoginActivity.java	(date 1733397963847)
+@@ -1,8 +1,9 @@
+ package com.example.habittracker;
+ 
+ import android.content.Intent;
++import android.database.Cursor;
++import android.database.sqlite.SQLiteDatabase;
+ import android.os.Bundle;
+-import android.view.View;
+ import android.widget.Button;
+ import android.widget.EditText;
+ import android.widget.TextView;
+@@ -12,33 +13,53 @@
+ 
+ public class LoginActivity extends AppCompatActivity {
+ 
++    private MyDatabaseHelper dbHelper;
++    private UserManager userManager;
++
+     @Override
+     protected void onCreate(Bundle savedInstanceState) {
+         super.onCreate(savedInstanceState);
+         setContentView(R.layout.activity_login);
+ 
+-        // 로그인 버튼
++        // 데이터베이스 및 UserManager 초기화
++        dbHelper = new MyDatabaseHelper(this);
++        userManager = new UserManager(this);
++
++        // UI 요소 초기화
+         Button loginButton = findViewById(R.id.btn_login);
+         EditText emailEditText = findViewById(R.id.edit_email);
+         EditText passwordEditText = findViewById(R.id.edit_password);
+-
+-        // 회원가입 텍스트
+         TextView signUpText = findViewById(R.id.text_sign_up);
+ 
+         // 로그인 버튼 클릭 리스너
+         loginButton.setOnClickListener(v -> {
+-            String email = emailEditText.getText().toString();
+-            String password = passwordEditText.getText().toString();
++            String email = emailEditText.getText().toString().trim();
++            String password = passwordEditText.getText().toString().trim();
+ 
+             if (email.isEmpty() || password.isEmpty()) {
+                 Toast.makeText(this, "이메일과 비밀번호를 입력하세요.", Toast.LENGTH_SHORT).show();
+-            } else {
+-                // 로그인 로직 (예: 서버와의 통신)
++                return;
++            }
++
++            if (checkCredentials(email, password)) {
+                 Toast.makeText(this, "로그인 성공!", Toast.LENGTH_SHORT).show();
+-                // 로그인 성공 시 MainActivity로 이동
+-                Intent intent = new Intent(LoginActivity.this, MainActivity.class);
++
++                // 로그인 성공 시 사용자 정보 저장
++                SQLiteDatabase db = dbHelper.getReadableDatabase();
++                Cursor cursor = db.rawQuery("SELECT * FROM User WHERE email = ?", new String[]{email});
++                if (cursor.moveToFirst()) {
++                    String userId = cursor.getString(cursor.getColumnIndexOrThrow("user_id"));
++                    String userName = cursor.getString(cursor.getColumnIndexOrThrow("username"));
++                    userManager.saveUser(userId, userName, email, password);
++                }
++                cursor.close();
++
++                // MainActivity로 이동
++                Intent intent = new Intent(LoginActivity.this, AddGoalActivity.class);
+                 startActivity(intent);
+                 finish();
++            } else {
++                Toast.makeText(this, "로그인 실패: 이메일 또는 비밀번호가 잘못되었습니다.", Toast.LENGTH_SHORT).show();
+             }
+         });
+ 
+@@ -49,4 +70,20 @@
+             startActivity(intent);
+         });
+     }
++
++    // 데이터베이스에서 이메일과 비밀번호 확인
++    private boolean checkCredentials(String email, String password) {
++        SQLiteDatabase db = null;
++        Cursor cursor = null;
++        try {
++            db = dbHelper.getReadableDatabase();
++            String query = "SELECT * FROM User WHERE email = ? AND password = ?";
++            cursor = db.rawQuery(query, new String[]{email, password});
++
++            return cursor.moveToFirst(); // 결과가 있으면 로그인 성공
++        } finally {
++            if (cursor != null) cursor.close();
++            if (db != null) db.close();
++        }
++    }
+ }
+\ No newline at end of file
+Index: app/src/main/java/com/example/habittracker/MainActivity.java
+IDEA additional info:
+Subsystem: com.intellij.openapi.diff.impl.patch.BaseRevisionTextPatchEP
+<+>package com.example.habittracker;\r\n\r\nimport android.content.Intent;\r\nimport android.os.Bundle;\r\nimport android.view.View;\r\nimport android.widget.Button;\r\nimport androidx.appcompat.app.AppCompatActivity;\r\n\r\npublic class MainActivity extends AppCompatActivity {\r\n    private Button btnLogout;\r\n\r\n    @Override\r\n    protected void onCreate(Bundle savedInstanceState) {\r\n        super.onCreate(savedInstanceState);\r\n        setContentView(R.layout.activity_main);\r\n\r\n        btnLogout = findViewById(R.id.btnLogout);\r\n\r\n        UserManager userManager = new UserManager(this);\r\n\r\n        btnLogout.setOnClickListener(new View.OnClickListener() {\r\n            @Override\r\n            public void onClick(View v) {\r\n                userManager.logout();\r\n                startActivity(new Intent(MainActivity.this, LoginActivity.class));\r\n                finish();\r\n            }\r\n        });\r\n    }\r\n}
+Subsystem: com.intellij.openapi.diff.impl.patch.CharsetEP
+<+>UTF-8
+===================================================================
+diff --git a/app/src/main/java/com/example/habittracker/MainActivity.java b/app/src/main/java/com/example/habittracker/MainActivity.java
+--- a/app/src/main/java/com/example/habittracker/MainActivity.java	(revision a187b657d3c68c5f8182792ffcde460510670d02)
++++ b/app/src/main/java/com/example/habittracker/MainActivity.java	(date 1733397963848)
+@@ -4,26 +4,52 @@
+ import android.os.Bundle;
+ import android.view.View;
+ import android.widget.Button;
++
+ import androidx.appcompat.app.AppCompatActivity;
+ 
+ public class MainActivity extends AppCompatActivity {
+-    private Button btnLogout;
++    private Button btnLogout, btnGoalSetting;
++    private UserManager userManager;
+ 
+     @Override
+     protected void onCreate(Bundle savedInstanceState) {
+         super.onCreate(savedInstanceState);
+         setContentView(R.layout.activity_main);
+ 
++        // UserManager 초기화
++        userManager = new UserManager(this);
++
++        // 로그인 상태 확인
++        if (!userManager.isLoggedIn()) {
++            // 로그인하지 않은 경우 LoginActivity로 이동
++            Intent intent = new Intent(MainActivity.this, LoginActivity.class);
++            startActivity(intent);
++            finish(); // MainActivity 종료
++            return;
++        }
++
++        // 버튼 초기화
+         btnLogout = findViewById(R.id.btnLogout);
++        btnGoalSetting = findViewById(R.id.btnGoalSetting);
+ 
+-        UserManager userManager = new UserManager(this);
+-
++        // 로그아웃 버튼 클릭 리스너
+         btnLogout.setOnClickListener(new View.OnClickListener() {
+             @Override
+             public void onClick(View v) {
+-                userManager.logout();
+-                startActivity(new Intent(MainActivity.this, LoginActivity.class));
+-                finish();
++                userManager.logout(); // 로그아웃 처리
++                Intent intent = new Intent(MainActivity.this, LoginActivity.class);
++                startActivity(intent);
++                finish(); // MainActivity 종료
++            }
++        });
++
++        // 목표 설정 버튼 클릭 리스너
++        btnGoalSetting.setOnClickListener(new View.OnClickListener() {
++            @Override
++            public void onClick(View v) {
++                // AddGoalActivity로 이동
++                Intent intent = new Intent(MainActivity.this, AddGoalActivity.class);
++                startActivity(intent);
+             }
+         });
+     }
+Index: app/src/main/res/layout/activity_statistics.xml
+IDEA additional info:
+Subsystem: com.intellij.openapi.diff.impl.patch.CharsetEP
+<+>UTF-8
+===================================================================
+diff --git a/app/src/main/res/layout/activity_statistics.xml b/app/src/main/res/layout/activity_statistics.xml
+new file mode 100644
+--- /dev/null	(date 1733397963862)
++++ b/app/src/main/res/layout/activity_statistics.xml	(date 1733397963862)
+@@ -0,0 +1,50 @@
++<?xml version="1.0" encoding="utf-8"?>
++<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
++    android:layout_width="match_parent"
++    android:layout_height="match_parent"
++    android:orientation="vertical"
++    android:padding="16dp">
++
++    <!-- 월별 통계 제목 -->
++    <TextView
++        android:id="@+id/monthTextView"
++        android:layout_width="wrap_content"
++        android:layout_height="wrap_content"
++        android:text="월별 성취도"
++        android:textSize="18sp"
++        android:textStyle="bold"
++        android:layout_marginBottom="10dp"/>
++
++    <!-- 월별 성취도 리스트 표시용 RecyclerView -->
++    <androidx.recyclerview.widget.RecyclerView
++        android:id="@+id/monthRecyclerView"
++        android:layout_width="match_parent"
++        android:layout_height="wrap_content"
++        android:layout_marginBottom="16dp"/>
++
++    <!-- 주별 통계 제목 -->
++    <TextView
++        android:id="@+id/weekTextView"
++        android:layout_width="wrap_content"
++        android:layout_height="wrap_content"
++        android:text="주별 성취도"
++        android:textSize="18sp"
++        android:textStyle="bold"
++        android:layout_marginBottom="10dp"/>
++
++    <!-- 주별 성취도 리스트 표시용 RecyclerView -->
++    <androidx.recyclerview.widget.RecyclerView
++        android:id="@+id/weekRecyclerView"
++        android:layout_width="match_parent"
++        android:layout_height="wrap_content"
++        android:layout_marginBottom="16dp"/>
++
++    <!-- 성취도 계산 후 결과를 표시할 텍스트뷰 -->
++    <TextView
++        android:id="@+id/achievementRateTextView"
++        android:layout_width="wrap_content"
++        android:layout_height="wrap_content"
++        android:text="성취도: 0%"
++        android:textSize="16sp"
++        android:layout_marginTop="16dp"/>
++</LinearLayout>
+Index: app/src/main/res/layout/activity_alarm.xml
+IDEA additional info:
+Subsystem: com.intellij.openapi.diff.impl.patch.CharsetEP
+<+>UTF-8
+===================================================================
+diff --git a/app/src/main/res/layout/activity_alarm.xml b/app/src/main/res/layout/activity_alarm.xml
+new file mode 100644
+--- /dev/null	(date 1733397963858)
++++ b/app/src/main/res/layout/activity_alarm.xml	(date 1733397963858)
+@@ -0,0 +1,172 @@
++<?xml version="1.0" encoding="utf-8"?>
++
++<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
++    xmlns:tools="http://schemas.android.com/tools"
++    android:layout_width="match_parent"
++    android:layout_height="match_parent"
++    android:baselineAligned="false"
++    android:orientation="vertical" >
++
++    <RadioGroup
++        android:layout_width="wrap_content"
++        android:layout_height="wrap_content"
++        android:id="@+id/radioGroup">
++
++        <RadioButton
++            android:id="@+id/rdoWeek"
++            android:layout_width="wrap_content"
++            android:layout_height="wrap_content"
++            android:text="주간 설정" />
++
++        <RadioButton
++            android:id="@+id/rdoDay"
++            android:layout_width="wrap_content"
++            android:layout_height="wrap_content"
++            android:text="일일 설정" />
++    </RadioGroup>
++
++    <LinearLayout
++        android:layout_width="match_parent"
++        android:layout_height="0dip"
++        android:layout_weight="1"
++        android:orientation="vertical">
++
++
++        <LinearLayout
++            android:layout_width="wrap_content"
++            android:layout_height="wrap_content"
++            android:orientation="horizontal">
++            <Button
++                android:layout_width="wrap_content"
++                android:layout_height="100dp"
++                android:layout_weight="1"
++                android:id="@+id/btnMon"
++                android:text="월"/>
++            <Button
++                android:layout_width="wrap_content"
++                android:layout_height="100dp"
++                android:layout_weight="1"
++                android:id="@+id/btnTue"
++                android:text="화"/>
++            <Button
++                android:layout_width="wrap_content"
++                android:layout_height="100dp"
++                android:layout_weight="1"
++                android:id="@+id/btnWed"
++                android:text="수"/>
++            <Button
++                android:layout_width="wrap_content"
++                android:layout_height="100dp"
++                android:layout_weight="1"
++                android:id="@+id/btnThu"
++                android:text="목"/>
++            <Button
++                android:layout_width="wrap_content"
++                android:layout_height="100dp"
++                android:layout_weight="1"
++                android:id="@+id/btnFri"
++                android:text="금"/>
++            <Button
++                android:layout_width="wrap_content"
++                android:layout_height="100dp"
++                android:layout_weight="1"
++                android:id="@+id/btnSat"
++                android:text="토"/>
++            <Button
++                android:layout_width="wrap_content"
++                android:layout_height="100dp"
++                android:layout_weight="1"
++                android:id="@+id/btnSun"
++                android:text="일"/>
++
++        </LinearLayout>
++        <TimePicker
++            android:timePickerMode="spinner"
++            android:id="@+id/timePicker1"
++            android:layout_width="match_parent"
++            android:layout_height="wrap_content"
++            android:layout_gravity="center" />
++
++        <TextView
++            android:layout_width="wrap_content"
++            android:layout_height="wrap_content"
++            android:text="알림 빈도수 (횟수)" />
++
++        <EditText
++            android:id="@+id/etFrequency"
++            android:layout_width="match_parent"
++            android:layout_height="wrap_content"
++            android:inputType="number"
++            android:textSize="20dp"
++            android:hint="알림 횟수를 입력하세요" />
++
++        <Button
++            android:id="@+id/btnSetAlarm"
++            android:layout_width="match_parent"
++            android:layout_height="wrap_content"
++            android:text="알림 설정" />
++    </LinearLayout>
++
++
++    <LinearLayout
++        android:layout_width="match_parent"
++        android:layout_height="wrap_content"
++        android:background="#CCCCCC"
++        android:gravity="center" >
++
++        <TextView
++            android:id="@+id/tvYear"
++            android:layout_width="wrap_content"
++            android:layout_height="wrap_content"
++            android:text="0000" />
++
++        <TextView
++            android:layout_width="wrap_content"
++            android:layout_height="wrap_content"
++            android:text="년" />
++
++        <TextView
++            android:id="@+id/tvMonth"
++            android:layout_width="wrap_content"
++            android:layout_height="wrap_content"
++            android:text="00" />
++
++        <TextView
++            android:layout_width="wrap_content"
++            android:layout_height="wrap_content"
++            android:text="월" />
++
++        <TextView
++            android:id="@+id/tvDay"
++            android:layout_width="wrap_content"
++            android:layout_height="wrap_content"
++            android:text="00" />
++
++        <TextView
++            android:layout_width="wrap_content"
++            android:layout_height="wrap_content"
++            android:text="일" />
++
++        <TextView
++            android:id="@+id/tvHour"
++            android:layout_width="wrap_content"
++            android:layout_height="wrap_content"
++            android:text="00" />
++
++        <TextView
++            android:layout_width="wrap_content"
++            android:layout_height="wrap_content"
++            android:text="시" />
++
++        <TextView
++            android:id="@+id/tvMinute"
++            android:layout_width="wrap_content"
++            android:layout_height="wrap_content"
++            android:text="00" />
++
++        <TextView
++            android:layout_width="wrap_content"
++            android:layout_height="wrap_content"
++            android:text="분 예약됨" />
++    </LinearLayout>
++</LinearLayout>
+\ No newline at end of file
+Index: app/src/main/res/layout/activity_add_goal.xml
+IDEA additional info:
+Subsystem: com.intellij.openapi.diff.impl.patch.CharsetEP
+<+>UTF-8
+===================================================================
+diff --git a/app/src/main/res/layout/activity_add_goal.xml b/app/src/main/res/layout/activity_add_goal.xml
+new file mode 100644
+--- /dev/null	(date 1733397963857)
++++ b/app/src/main/res/layout/activity_add_goal.xml	(date 1733397963857)
+@@ -0,0 +1,113 @@
++<androidx.appcompat.widget.LinearLayoutCompat xmlns:android="http://schemas.android.com/apk/res/android"
++    android:layout_width="match_parent"
++    android:layout_height="wrap_content"
++    android:orientation="vertical"
++    android:padding="16dp">
++
++    <!-- 목표 이름 입력 -->
++    <EditText
++        android:id="@+id/et_goal_name"
++        android:layout_width="match_parent"
++        android:layout_height="wrap_content"
++        android:hint="목표를 입력하세요" />
++
++    <!-- 시작 날짜 -->
++    <EditText
++        android:id="@+id/et_start_date"
++        android:layout_width="match_parent"
++        android:layout_height="wrap_content"
++        android:hint="시작 날짜를 입력하세요 (YYYY-MM-DD)" />
++
++    <!-- 종료 날짜 -->
++    <EditText
++        android:id="@+id/et_end_date"
++        android:layout_width="match_parent"
++        android:layout_height="wrap_content"
++        android:hint="종료 날짜를 입력하세요 (선택 사항)" />
++
++    <!-- 리마인더 활성화 -->
++    <Switch
++        android:id="@+id/sw_reminder_enabled"
++        android:layout_width="wrap_content"
++        android:layout_height="wrap_content"
++        android:text="리마인더 활성화" />
++
++    <!-- 반복 요일 선택 -->
++    <TextView
++        android:layout_width="wrap_content"
++        android:layout_height="wrap_content"
++        android:text="반복 요일" />
++
++    <LinearLayout
++        android:layout_width="match_parent"
++        android:layout_height="wrap_content"
++        android:orientation="horizontal">
++
++        <!-- 월요일 -->
++        <CheckBox
++            android:id="@+id/cb_monday"
++            android:layout_width="wrap_content"
++            android:layout_height="wrap_content"
++            android:text="월" />
++
++        <!-- 화요일 -->
++        <CheckBox
++            android:id="@+id/cb_tuesday"
++            android:layout_width="wrap_content"
++            android:layout_height="wrap_content"
++            android:text="화" />
++
++        <!-- 수요일 -->
++        <CheckBox
++            android:id="@+id/cb_wednesday"
++            android:layout_width="wrap_content"
++            android:layout_height="wrap_content"
++            android:text="수" />
++
++        <!-- 목요일 -->
++        <CheckBox
++            android:id="@+id/cb_thursday"
++            android:layout_width="wrap_content"
++            android:layout_height="wrap_content"
++            android:text="목" />
++
++        <!-- 금요일 -->
++        <CheckBox
++            android:id="@+id/cb_friday"
++            android:layout_width="wrap_content"
++            android:layout_height="wrap_content"
++            android:text="금" />
++
++        <!-- 토요일 -->
++        <CheckBox
++            android:id="@+id/cb_saturday"
++            android:layout_width="wrap_content"
++            android:layout_height="wrap_content"
++            android:text="토" />
++
++        <!-- 일요일 -->
++        <CheckBox
++            android:id="@+id/cb_sunday"
++            android:layout_width="wrap_content"
++            android:layout_height="wrap_content"
++            android:text="일" />
++    </LinearLayout>
++
++
++    <!-- 하루 반복 횟수 -->
++    <EditText
++        android:id="@+id/et_target_count"
++        android:layout_width="match_parent"
++        android:layout_height="wrap_content"
++        android:hint="하루에 몇 번 반복하시겠습니까?"
++        android:inputType="number" />
++
++    <!-- 저장 버튼 -->
++    <Button
++        android:id="@+id/btn_save_habit"
++        android:layout_width="wrap_content"
++        android:layout_height="wrap_content"
++        android:layout_gravity="center"
++        android:text="저장" />
++
++</androidx.appcompat.widget.LinearLayoutCompat>
+\ No newline at end of file
+Index: .idea/.gitignore
+IDEA additional info:
+Subsystem: com.intellij.openapi.diff.impl.patch.CharsetEP
+<+>UTF-8
+===================================================================
+diff --git a/.idea/.gitignore b/.idea/.gitignore
+new file mode 100644
+--- /dev/null	(date 1733397963834)
++++ b/.idea/.gitignore	(date 1733397963834)
+@@ -0,0 +1,3 @@
++# Default ignored files
++/shelf/
++/workspace.xml
+Index: app/src/main/res/layout/goal_item.xml
+IDEA additional info:
+Subsystem: com.intellij.openapi.diff.impl.patch.CharsetEP
+<+>UTF-8
+===================================================================
+diff --git a/app/src/main/res/layout/goal_item.xml b/app/src/main/res/layout/goal_item.xml
+new file mode 100644
+--- /dev/null	(date 1733397963863)
++++ b/app/src/main/res/layout/goal_item.xml	(date 1733397963863)
+@@ -0,0 +1,21 @@
++<?xml version="1.0" encoding="utf-8"?>
++<LinearLayout
++    xmlns:android="http://schemas.android.com/apk/res/android"
++    android:layout_width="match_parent"
++    android:layout_height="wrap_content"
++    android:orientation="horizontal"
++    android:padding="8dp">
++
++    <TextView
++        android:id="@+id/goalText"
++        android:layout_width="0dp"
++        android:layout_height="wrap_content"
++        android:layout_weight="1"
++        android:text="목표를 입력하세요."
++        android:textSize="16sp" />
++
++    <CheckBox
++        android:id="@+id/goalCheckBox"
++        android:layout_width="wrap_content"
++        android:layout_height="wrap_content" />
++</LinearLayout>
+\ No newline at end of file
+Index: settings.gradle.kts
+IDEA additional info:
+Subsystem: com.intellij.openapi.diff.impl.patch.BaseRevisionTextPatchEP
+<+>pluginManagement {\r\n    repositories {\r\n        google()\r\n        mavenCentral()\r\n        gradlePluginPortal()\r\n    }\r\n}\r\ndependencyResolutionManagement {\r\n    repositoriesMode.set(RepositoriesMode.FAIL_ON_PROJECT_REPOS)\r\n    repositories {\r\n        google()\r\n        mavenCentral()\r\n    }\r\n}\r\n\r\nrootProject.name = \"habitTracker\"\r\ninclude(\":app\")\r\n
+Subsystem: com.intellij.openapi.diff.impl.patch.CharsetEP
+<+>UTF-8
+===================================================================
+diff --git a/settings.gradle.kts b/settings.gradle.kts
+--- a/settings.gradle.kts	(revision a187b657d3c68c5f8182792ffcde460510670d02)
++++ b/settings.gradle.kts	(date 1733397963870)
+@@ -5,8 +5,10 @@
+         gradlePluginPortal()
+     }
+ }
++
+ dependencyResolutionManagement {
+-    repositoriesMode.set(RepositoriesMode.FAIL_ON_PROJECT_REPOS)
++    repositoriesMode.set(RepositoriesMode.PREFER_SETTINGS)  // 변경된 부분
++
+     repositories {
+         google()
+         mavenCentral()
+@@ -14,4 +16,4 @@
+ }
+ 
+ rootProject.name = "habitTracker"
+-include(":app")
++include(":app")
+\ No newline at end of file
+Index: app/src/main/res/layout/stat_item.xml
+IDEA additional info:
+Subsystem: com.intellij.openapi.diff.impl.patch.CharsetEP
+<+>UTF-8
+===================================================================
+diff --git a/app/src/main/res/layout/stat_item.xml b/app/src/main/res/layout/stat_item.xml
+new file mode 100644
+--- /dev/null	(date 1733397963864)
++++ b/app/src/main/res/layout/stat_item.xml	(date 1733397963864)
+@@ -0,0 +1,24 @@
++<!-- stat_item.xml -->
++<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
++    android:layout_width="match_parent"
++    android:layout_height="wrap_content"
++    android:orientation="horizontal"
++    android:padding="16dp"
++    android:background="?android:attr/selectableItemBackground">
++
++    <TextView
++        android:id="@+id/weekTextView"
++        android:layout_width="0dp"
++        android:layout_height="wrap_content"
++        android:layout_weight="1"
++        android:text="Week"
++        android:textSize="16sp"
++        android:textStyle="bold"/>
++
++    <TextView
++        android:id="@+id/achievementCountTextView"
++        android:layout_width="wrap_content"
++        android:layout_height="wrap_content"
++        android:text="Achievements"
++        android:textSize="16sp"/>
++</LinearLayout>
+Index: app/src/main/res/layout/activity_goal_details.xml
+IDEA additional info:
+Subsystem: com.intellij.openapi.diff.impl.patch.CharsetEP
+<+>UTF-8
+===================================================================
+diff --git a/app/src/main/res/layout/activity_goal_details.xml b/app/src/main/res/layout/activity_goal_details.xml
+new file mode 100644
+--- /dev/null	(date 1733397963859)
++++ b/app/src/main/res/layout/activity_goal_details.xml	(date 1733397963859)
+@@ -0,0 +1,14 @@
++<?xml version="1.0" encoding="utf-8"?>
++<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
++    android:layout_width="match_parent"
++    android:layout_height="match_parent"
++    android:orientation="vertical"
++    android:padding="16dp">
++
++    <TextView
++        android:id="@+id/tv_habit_details"
++        android:layout_width="match_parent"
++        android:layout_height="wrap_content"
++        android:text="Loading habits..."
++        android:textSize="16sp" />
++</LinearLayout>
+\ No newline at end of file
+Index: gradle/wrapper/gradle-wrapper.properties
+IDEA additional info:
+Subsystem: com.intellij.openapi.diff.impl.patch.BaseRevisionTextPatchEP
+<+>#Mon Nov 18 22:07:06 KST 2024\r\ndistributionBase=GRADLE_USER_HOME\r\ndistributionPath=wrapper/dists\r\ndistributionUrl=https\\://services.gradle.org/distributions/gradle-8.2-bin.zip\r\nzipStoreBase=GRADLE_USER_HOME\r\nzipStorePath=wrapper/dists\r\n
+Subsystem: com.intellij.openapi.diff.impl.patch.CharsetEP
+<+>ISO-8859-1
+===================================================================
+diff --git a/gradle/wrapper/gradle-wrapper.properties b/gradle/wrapper/gradle-wrapper.properties
+--- a/gradle/wrapper/gradle-wrapper.properties	(revision a187b657d3c68c5f8182792ffcde460510670d02)
++++ b/gradle/wrapper/gradle-wrapper.properties	(date 1733397963869)
+@@ -1,4 +1,4 @@
+-#Mon Nov 18 22:07:06 KST 2024
++
+ distributionBase=GRADLE_USER_HOME
+ distributionPath=wrapper/dists
+ distributionUrl=https\://services.gradle.org/distributions/gradle-8.2-bin.zip
+Index: app/src/main/java/com/example/habittracker/RegisterActivity.java
+IDEA additional info:
+Subsystem: com.intellij.openapi.diff.impl.patch.BaseRevisionTextPatchEP
+<+>package com.example.habittracker;\r\n\r\nimport android.os.Bundle;\r\nimport android.widget.Button;\r\nimport android.widget.EditText;\r\nimport android.widget.Toast;\r\n\r\nimport androidx.appcompat.app.AppCompatActivity;\r\n\r\npublic class RegisterActivity extends AppCompatActivity {\r\n\r\n    @Override\r\n    protected void onCreate(Bundle savedInstanceState) {\r\n        super.onCreate(savedInstanceState);\r\n        setContentView(R.layout.activity_register);\r\n\r\n        // 회원가입 필드 및 버튼\r\n        EditText nameEditText = findViewById(R.id.edit_name);\r\n        EditText emailEditText = findViewById(R.id.edit_email);\r\n        EditText passwordEditText = findViewById(R.id.edit_password);\r\n        Button signUpButton = findViewById(R.id.btn_sign_up);\r\n\r\n        // 회원가입 버튼 클릭 리스너\r\n        signUpButton.setOnClickListener(v -> {\r\n            String name = nameEditText.getText().toString();\r\n            String email = emailEditText.getText().toString();\r\n            String password = passwordEditText.getText().toString();\r\n\r\n            if (name.isEmpty() || email.isEmpty() || password.isEmpty()) {\r\n                Toast.makeText(this, \"모든 정보를 입력하세요.\", Toast.LENGTH_SHORT).show();\r\n            } else {\r\n                // 회원가입 로직 (예: 서버와의 통신)\r\n                Toast.makeText(this, \"회원가입 성공!\", Toast.LENGTH_SHORT).show();\r\n                finish(); // 회원가입 후 LoginActivity로 돌아감\r\n            }\r\n        });\r\n    }\r\n}
+Subsystem: com.intellij.openapi.diff.impl.patch.CharsetEP
+<+>UTF-8
+===================================================================
+diff --git a/app/src/main/java/com/example/habittracker/RegisterActivity.java b/app/src/main/java/com/example/habittracker/RegisterActivity.java
+--- a/app/src/main/java/com/example/habittracker/RegisterActivity.java	(revision a187b657d3c68c5f8182792ffcde460510670d02)
++++ b/app/src/main/java/com/example/habittracker/RegisterActivity.java	(date 1733397963852)
+@@ -1,6 +1,9 @@
+ package com.example.habittracker;
+ 
++import android.content.ContentValues;
++import android.database.sqlite.SQLiteDatabase;
+ import android.os.Bundle;
++import android.util.Patterns;
+ import android.widget.Button;
+ import android.widget.EditText;
+ import android.widget.Toast;
+@@ -8,12 +11,15 @@
+ import androidx.appcompat.app.AppCompatActivity;
+ 
+ public class RegisterActivity extends AppCompatActivity {
++    private MyDatabaseHelper dbHelper;
+ 
+     @Override
+     protected void onCreate(Bundle savedInstanceState) {
+         super.onCreate(savedInstanceState);
+         setContentView(R.layout.activity_register);
+ 
++        dbHelper = new MyDatabaseHelper(this); // dbHelper 초기화
++
+         // 회원가입 필드 및 버튼
+         EditText nameEditText = findViewById(R.id.edit_name);
+         EditText emailEditText = findViewById(R.id.edit_email);
+@@ -22,16 +28,47 @@
+ 
+         // 회원가입 버튼 클릭 리스너
+         signUpButton.setOnClickListener(v -> {
+-            String name = nameEditText.getText().toString();
+-            String email = emailEditText.getText().toString();
+-            String password = passwordEditText.getText().toString();
++            String name = nameEditText.getText().toString().trim();
++            String email = emailEditText.getText().toString().trim();
++            String password = passwordEditText.getText().toString().trim();
+ 
+             if (name.isEmpty() || email.isEmpty() || password.isEmpty()) {
+                 Toast.makeText(this, "모든 정보를 입력하세요.", Toast.LENGTH_SHORT).show();
+-            } else {
+-                // 회원가입 로직 (예: 서버와의 통신)
+-                Toast.makeText(this, "회원가입 성공!", Toast.LENGTH_SHORT).show();
+-                finish(); // 회원가입 후 LoginActivity로 돌아감
++                return;
++            }
++
++            if (!Patterns.EMAIL_ADDRESS.matcher(email).matches()) {
++                Toast.makeText(this, "유효한 이메일 주소를 입력하세요.", Toast.LENGTH_SHORT).show();
++                return;
++            }
++
++            if (password.length() < 6) {
++                Toast.makeText(this, "비밀번호는 6자 이상이어야 합니다.", Toast.LENGTH_SHORT).show();
++                return;
++            }
++
++            SQLiteDatabase db = null;
++            try {
++                db = dbHelper.getWritableDatabase();
++                ContentValues values = new ContentValues();
++                values.put("username", name);
++                values.put("email", email); // 이메일 추가
++                values.put("password", password);
++
++                long result = db.insert("User", null, values);
++                if (result == -1) {
++                    System.err.println("Insert failed: " + values.toString());
++                    Toast.makeText(this, "회원가입에 실패했습니다. 다시 시도하세요.", Toast.LENGTH_SHORT).show();
++                } else {
++                    System.out.println("Insert success: " + values.toString());
++                    Toast.makeText(this, "회원가입 성공!", Toast.LENGTH_SHORT).show();
++                    finish(); // LoginActivity로 이동
++                }
++            } catch (Exception e) {
++                System.err.println("Database error: " + e.getMessage());
++                Toast.makeText(this, "Database error: " + e.getMessage(), Toast.LENGTH_SHORT).show();
++            } finally {
++                if (db != null) db.close();
+             }
+         });
+     }
+Index: build.gradle.kts
+IDEA additional info:
+Subsystem: com.intellij.openapi.diff.impl.patch.BaseRevisionTextPatchEP
+<+>// Top-level build file where you can add configuration options common to all sub-projects/modules.\r\nplugins {\r\n    id(\"com.android.application\") version \"8.2.0\" apply false\r\n}
+Subsystem: com.intellij.openapi.diff.impl.patch.CharsetEP
+<+>UTF-8
+===================================================================
+diff --git a/build.gradle.kts b/build.gradle.kts
+--- a/build.gradle.kts	(revision a187b657d3c68c5f8182792ffcde460510670d02)
++++ b/build.gradle.kts	(date 1733397963867)
+@@ -1,4 +1,12 @@
+ // Top-level build file where you can add configuration options common to all sub-projects/modules.
+ plugins {
+     id("com.android.application") version "8.2.0" apply false
++}
++
++allprojects {
++    repositories {
++        google()
++        mavenCentral()  // Maven Central 추가
++
++    }
+ }
+\ No newline at end of file
+Index: app/build.gradle.kts
+IDEA additional info:
+Subsystem: com.intellij.openapi.diff.impl.patch.BaseRevisionTextPatchEP
+<+>plugins {\r\n    id(\"com.android.application\")\r\n}\r\n\r\nandroid {\r\n    namespace = \"com.example.habittracker\"\r\n    compileSdk = 34\r\n\r\n    defaultConfig {\r\n        applicationId = \"com.example.habittracker\"\r\n        minSdk = 24\r\n        targetSdk = 34\r\n        versionCode = 1\r\n        versionName = \"1.0\"\r\n\r\n        testInstrumentationRunner = \"androidx.test.runner.AndroidJUnitRunner\"\r\n    }\r\n\r\n    buildTypes {\r\n        release {\r\n            isMinifyEnabled = false\r\n            proguardFiles(getDefaultProguardFile(\"proguard-android-optimize.txt\"), \"proguard-rules.pro\")\r\n        }\r\n    }\r\n    compileOptions {\r\n        sourceCompatibility = JavaVersion.VERSION_1_8\r\n        targetCompatibility = JavaVersion.VERSION_1_8\r\n    }\r\n}\r\n\r\ndependencies {\r\n\r\n    implementation(\"androidx.appcompat:appcompat:1.7.0\")\r\n    implementation(\"com.google.android.material:material:1.12.0\")\r\n    implementation(\"androidx.constraintlayout:constraintlayout:2.2.0\")\r\n    testImplementation(\"junit:junit:4.13.2\")\r\n    androidTestImplementation(\"androidx.test.ext:junit:1.2.1\")\r\n    androidTestImplementation(\"androidx.test.espresso:espresso-core:3.6.1\")\r\n}
+Subsystem: com.intellij.openapi.diff.impl.patch.CharsetEP
+<+>UTF-8
+===================================================================
+diff --git a/app/build.gradle.kts b/app/build.gradle.kts
+--- a/app/build.gradle.kts	(revision a187b657d3c68c5f8182792ffcde460510670d02)
++++ b/app/build.gradle.kts	(date 1733397963835)
+@@ -29,11 +29,11 @@
+ }
+ 
+ dependencies {
+-
+     implementation("androidx.appcompat:appcompat:1.7.0")
+     implementation("com.google.android.material:material:1.12.0")
+     implementation("androidx.constraintlayout:constraintlayout:2.2.0")
+     testImplementation("junit:junit:4.13.2")
+     androidTestImplementation("androidx.test.ext:junit:1.2.1")
+     androidTestImplementation("androidx.test.espresso:espresso-core:3.6.1")
++
+ }
+\ No newline at end of file
+Index: app/src/main/java/com/example/habittracker/UserManager.java
+IDEA additional info:
+Subsystem: com.intellij.openapi.diff.impl.patch.BaseRevisionTextPatchEP
+<+>// UserManager.java\r\npackage com.example.habittracker;\r\n\r\nimport android.content.Context;\r\nimport android.content.SharedPreferences;\r\n\r\npublic class UserManager {\r\n    private static final String PREF_NAME = \"UserPrefs\";\r\n    private static final String KEY_USER_ID = \"user_id\";\r\n    private static final String KEY_USER_NAME = \"user_name\";\r\n    private static final String KEY_EMAIL = \"email\";\r\n    private static final String KEY_PASSWORD = \"password\";\r\n    private static final String KEY_IS_LOGGED_IN = \"is_logged_in\";\r\n\r\n    private SharedPreferences sharedPreferences;\r\n    private SharedPreferences.Editor editor;\r\n\r\n    public UserManager(Context context) {\r\n        sharedPreferences = context.getSharedPreferences(PREF_NAME, Context.MODE_PRIVATE);\r\n        editor = sharedPreferences.edit();\r\n    }\r\n\r\n    public void saveUser(String userId, String userName, String email, String password) {\r\n        editor.putString(KEY_USER_ID, userId);\r\n        editor.putString(KEY_USER_NAME, userName);\r\n        editor.putString(KEY_EMAIL, email);\r\n        editor.putString(KEY_PASSWORD, password);\r\n        editor.putBoolean(KEY_IS_LOGGED_IN, true);\r\n        editor.apply();\r\n    }\r\n\r\n    public boolean login(String email, String password) {\r\n        String savedEmail = sharedPreferences.getString(KEY_EMAIL, null);\r\n        String savedPassword = sharedPreferences.getString(KEY_PASSWORD, null);\r\n        if (email.equals(savedEmail) && password.equals(savedPassword)) {\r\n            editor.putBoolean(KEY_IS_LOGGED_IN, true);\r\n            editor.apply();\r\n            return true;\r\n        }\r\n        return false;\r\n    }\r\n\r\n    public void logout() {\r\n        editor.putBoolean(KEY_IS_LOGGED_IN, false);\r\n        editor.apply();\r\n    }\r\n\r\n    public boolean isLoggedIn() {\r\n        return sharedPreferences.getBoolean(KEY_IS_LOGGED_IN, false);\r\n    }\r\n}\r\n\r\n
+Subsystem: com.intellij.openapi.diff.impl.patch.CharsetEP
+<+>UTF-8
+===================================================================
+diff --git a/app/src/main/java/com/example/habittracker/UserManager.java b/app/src/main/java/com/example/habittracker/UserManager.java
+--- a/app/src/main/java/com/example/habittracker/UserManager.java	(revision a187b657d3c68c5f8182792ffcde460510670d02)
++++ b/app/src/main/java/com/example/habittracker/UserManager.java	(date 1733397963855)
+@@ -1,4 +1,3 @@
+-// UserManager.java
+ package com.example.habittracker;
+ 
+ import android.content.Context;
+@@ -20,6 +19,7 @@
+         editor = sharedPreferences.edit();
+     }
+ 
++    // 사용자 정보 저장
+     public void saveUser(String userId, String userName, String email, String password) {
+         editor.putString(KEY_USER_ID, userId);
+         editor.putString(KEY_USER_NAME, userName);
+@@ -29,24 +29,29 @@
+         editor.apply();
+     }
+ 
+-    public boolean login(String email, String password) {
+-        String savedEmail = sharedPreferences.getString(KEY_EMAIL, null);
+-        String savedPassword = sharedPreferences.getString(KEY_PASSWORD, null);
+-        if (email.equals(savedEmail) && password.equals(savedPassword)) {
+-            editor.putBoolean(KEY_IS_LOGGED_IN, true);
+-            editor.apply();
+-            return true;
+-        }
+-        return false;
++    // 로그인 상태 확인
++    public boolean isLoggedIn() {
++        return sharedPreferences.getBoolean(KEY_IS_LOGGED_IN, false);
+     }
+ 
++    // 로그아웃 처리
+     public void logout() {
+         editor.putBoolean(KEY_IS_LOGGED_IN, false);
+         editor.apply();
+     }
+ 
+-    public boolean isLoggedIn() {
+-        return sharedPreferences.getBoolean(KEY_IS_LOGGED_IN, false);
++    // 사용자 ID 가져오기
++    public String getUserId() {
++        return sharedPreferences.getString(KEY_USER_ID, null);
+     }
+-}
++
++    // 사용자 이름 가져오기
++    public String getUserName() {
++        return sharedPreferences.getString(KEY_USER_NAME, null);
++    }
+ 
++    // 사용자 이메일 가져오기
++    public String getEmail() {
++        return sharedPreferences.getString(KEY_EMAIL, null);
++    }
++}
+\ No newline at end of file
+Index: .idea/deploymentTargetDropDown.xml
+IDEA additional info:
+Subsystem: com.intellij.openapi.diff.impl.patch.BaseRevisionTextPatchEP
+<+><?xml version=\"1.0\" encoding=\"UTF-8\"?>\r\n<project version=\"4\">\r\n  <component name=\"deploymentTargetDropDown\">\r\n    <value>\r\n      <entry key=\"app\">\r\n        <State />\r\n      </entry>\r\n    </value>\r\n  </component>\r\n</project>
+Subsystem: com.intellij.openapi.diff.impl.patch.CharsetEP
+<+>UTF-8
+===================================================================
+diff --git a/.idea/deploymentTargetDropDown.xml b/.idea/deploymentTargetDropDown.xml
+--- a/.idea/deploymentTargetDropDown.xml	(revision a187b657d3c68c5f8182792ffcde460510670d02)
++++ b/.idea/deploymentTargetDropDown.xml	(date 1733141591914)
+@@ -2,7 +2,7 @@
+ <project version="4">
+   <component name="deploymentTargetDropDown">
+     <value>
+-      <entry key="app">
++      <entry key="Unnamed">
+         <State />
+       </entry>
+     </value>
+Index: app/src/main/AndroidManifest.xml
+IDEA additional info:
+Subsystem: com.intellij.openapi.diff.impl.patch.BaseRevisionTextPatchEP
+<+><?xml version=\"1.0\" encoding=\"utf-8\"?>\r\n<manifest xmlns:android=\"http://schemas.android.com/apk/res/android\"\r\n    xmlns:tools=\"http://schemas.android.com/tools\">\r\n\r\n    <application\r\n        android:allowBackup=\"true\"\r\n        android:dataExtractionRules=\"@xml/data_extraction_rules\"\r\n        android:fullBackupContent=\"@xml/backup_rules\"\r\n        android:icon=\"@mipmap/ic_launcher\"\r\n        android:label=\"@string/app_name\"\r\n        android:roundIcon=\"@mipmap/ic_launcher_round\"\r\n        android:supportsRtl=\"true\"\r\n        android:theme=\"@style/Theme.HabitTracker\"\r\n        tools:targetApi=\"31\">\r\n\r\n        <!-- 초기 화면: 로그인 액티비티 -->\r\n        <activity\r\n            android:name=\".LoginActivity\"\r\n            android:exported=\"true\">\r\n            <intent-filter>\r\n                <action android:name=\"android.intent.action.MAIN\" />\r\n                <category android:name=\"android.intent.category.LAUNCHER\" />\r\n            </intent-filter>\r\n        </activity>\r\n\r\n        <!-- 회원가입 액티비티 -->\r\n        <activity\r\n            android:name=\".RegisterActivity\"\r\n            android:exported=\"true\" />\r\n\r\n        <!-- 메인 액티비티 (로그인 후 이동) -->\r\n        <activity\r\n            android:name=\".MainActivity\"\r\n            android:exported=\"true\" />\r\n\r\n    </application>\r\n\r\n</manifest>\r\n\r\n
+Subsystem: com.intellij.openapi.diff.impl.patch.CharsetEP
+<+>UTF-8
+===================================================================
+diff --git a/app/src/main/AndroidManifest.xml b/app/src/main/AndroidManifest.xml
+--- a/app/src/main/AndroidManifest.xml	(revision a187b657d3c68c5f8182792ffcde460510670d02)
++++ b/app/src/main/AndroidManifest.xml	(date 1733397963838)
+@@ -30,10 +30,23 @@
+ 
+         <!-- 메인 액티비티 (로그인 후 이동) -->
+         <activity
+-            android:name=".MainActivity"
++            android:name=".AddGoalActivity"
++            android:exported="true" />
++
++        <!-- 통계 액티비티 -->
++        <activity
++            android:name=".StatisticsActivity"
++            android:exported="true" />
++
++        <activity
++            android:name=".GoalDetailsActivity"
++            android:exported="true" />
++        <activity
++            android:name=".AlarmSetting"
+             android:exported="true" />
+-
++        <activity
++            android:name=".GoalcheckMainActivity"
++            android:exported="true" />
+     </application>
+ 
+-</manifest>
+-
++</manifest>
+\ No newline at end of file
+Index: app/src/main/java/com/example/habittracker/GoalAdapter.java
+IDEA additional info:
+Subsystem: com.intellij.openapi.diff.impl.patch.CharsetEP
+<+>UTF-8
+===================================================================
+diff --git a/app/src/main/java/com/example/habittracker/GoalAdapter.java b/app/src/main/java/com/example/habittracker/GoalAdapter.java
+new file mode 100644
+--- /dev/null	(date 1733397963843)
++++ b/app/src/main/java/com/example/habittracker/GoalAdapter.java	(date 1733397963843)
+@@ -0,0 +1,67 @@
++package com.example.habittracker;
++
++import android.view.LayoutInflater;
++import android.view.View;
++import android.view.ViewGroup;
++import android.widget.CheckBox;
++import android.widget.TextView;
++
++import androidx.annotation.NonNull;
++import androidx.recyclerview.widget.RecyclerView;
++import java.util.ArrayList;
++
++public class GoalAdapter extends RecyclerView.Adapter<GoalAdapter.GoalViewHolder> {
++
++    private final ArrayList<String> goalList;
++
++    public GoalAdapter(ArrayList<String> goalList) {
++        this.goalList = goalList;
++    }
++
++    @NonNull
++    @Override
++    public GoalViewHolder onCreateViewHolder(@NonNull ViewGroup parent, int viewType) {
++        // goal_item.xml을 뷰홀더에 연결
++        View view = LayoutInflater.from(parent.getContext())
++                .inflate(R.layout.goal_item, parent, false);
++        return new GoalViewHolder(view);
++    }
++
++    @Override
++    public void onBindViewHolder(@NonNull GoalViewHolder holder, int position) {
++        // 현재 목표 가져오기
++        String goal = goalList.get(position);
++        holder.goalText.setText(goal);
++
++        // 체크박스 상태 초기화
++        holder.goalCheckBox.setChecked(false);
++
++        // 체크박스 이벤트 처리
++        holder.goalCheckBox.setOnCheckedChangeListener((buttonView, isChecked) -> {
++            if (isChecked) {
++                // 목표가 완료되었을 때의 동작
++                System.out.println("Goal checked: " + goal);
++            } else {
++                // 목표가 미완료 상태로 돌아갔을 때
++                System.out.println("Goal unchecked: " + goal);
++            }
++        });
++    }
++
++    @Override
++    public int getItemCount() {
++        return goalList.size();
++    }
++
++    public static class GoalViewHolder extends RecyclerView.ViewHolder {
++        // 뷰홀더에서 TextView와 CheckBox를 연결
++        TextView goalText;
++        CheckBox goalCheckBox;
++
++        public GoalViewHolder(@NonNull View itemView) {
++            super(itemView);
++            goalText = itemView.findViewById(R.id.goalText); // `goal_item.xml`의 TextView
++            goalCheckBox = itemView.findViewById(R.id.goalCheckBox); // `goal_item.xml`의 CheckBox
++        }
++    }
++}
+\ No newline at end of file
+Index: app/src/main/java/com/example/habittracker/RegisterMainActivity.java
+IDEA additional info:
+Subsystem: com.intellij.openapi.diff.impl.patch.CharsetEP
+<+>UTF-8
+===================================================================
+diff --git a/app/src/main/java/com/example/habittracker/RegisterMainActivity.java b/app/src/main/java/com/example/habittracker/RegisterMainActivity.java
+new file mode 100644
+--- /dev/null	(date 1733397963853)
++++ b/app/src/main/java/com/example/habittracker/RegisterMainActivity.java	(date 1733397963853)
+@@ -0,0 +1,34 @@
++package com.example.habittracker;
++
++import android.content.Intent;
++import android.os.Bundle;
++import android.view.View;
++import android.widget.Button;
++import androidx.appcompat.app.AppCompatActivity;
++
++public class RegisterMainActivity extends AppCompatActivity {
++    private Button btnLogout;
++
++    @Override
++    protected void onCreate(Bundle savedInstanceState) {
++        super.onCreate(savedInstanceState);
++        setContentView(R.layout.activity_main);
++
++        btnLogout = findViewById(R.id.btnLogout);
++
++        UserManager userManager = new UserManager(this);
++
++        // 로그인이 완료되면 MainActivity에서 바로 StatisticsActivity로 이동
++        startActivity(new Intent(RegisterMainActivity.this, StatisticsActivity.class));
++        finish();  // MainActivity 종료
++
++        btnLogout.setOnClickListener(new View.OnClickListener() {
++            @Override
++            public void onClick(View v) {
++                userManager.logout();
++                startActivity(new Intent(RegisterMainActivity.this, LoginActivity.class));
++                finish();
++            }
++        });
++    }
++}
+Index: app/src/main/java/com/example/habittracker/MonthlyStatsAdapter.java
+IDEA additional info:
+Subsystem: com.intellij.openapi.diff.impl.patch.CharsetEP
+<+>UTF-8
+===================================================================
+diff --git a/app/src/main/java/com/example/habittracker/MonthlyStatsAdapter.java b/app/src/main/java/com/example/habittracker/MonthlyStatsAdapter.java
+new file mode 100644
+--- /dev/null	(date 1733397963849)
++++ b/app/src/main/java/com/example/habittracker/MonthlyStatsAdapter.java	(date 1733397963849)
+@@ -0,0 +1,51 @@
++package com.example.habittracker;
++
++import android.content.Context;
++import android.database.Cursor;
++import android.view.LayoutInflater;
++import android.view.View;
++import android.view.ViewGroup;
++import android.widget.TextView;
++import androidx.recyclerview.widget.RecyclerView;
++
++public class MonthlyStatsAdapter extends RecyclerView.Adapter<MonthlyStatsAdapter.ViewHolder> {
++
++    private Context context;
++    private Cursor cursor;
++
++    public MonthlyStatsAdapter(Context context, Cursor cursor) {
++        this.context = context;
++        this.cursor = cursor;
++    }
++
++    @Override
++    public ViewHolder onCreateViewHolder(ViewGroup parent, int viewType) {
++        View view = LayoutInflater.from(context).inflate(R.layout.stat_item, parent, false);
++        return new ViewHolder(view);
++    }
++
++    @Override
++    public void onBindViewHolder(ViewHolder holder, int position) {
++        if (cursor != null && cursor.moveToPosition(position)) {
++            String month = cursor.getString(cursor.getColumnIndex("month"));
++            int achievementCount = cursor.getInt(cursor.getColumnIndex("achievement_count"));
++            holder.monthTextView.setText("Month " + month);
++            holder.achievementCountTextView.setText("Achievements: " + achievementCount);
++        }
++    }
++
++    @Override
++    public int getItemCount() {
++        return cursor != null ? cursor.getCount() : 0;
++    }
++
++    public static class ViewHolder extends RecyclerView.ViewHolder {
++        TextView monthTextView, achievementCountTextView;
++
++        public ViewHolder(View itemView) {
++            super(itemView);
++            monthTextView = itemView.findViewById(R.id.monthTextView);
++            achievementCountTextView = itemView.findViewById(R.id.achievementCountTextView);
++        }
++    }
++}
+Index: app/src/test/java/com/example/alarm_group/ExampleUnitTest.java
+IDEA additional info:
+Subsystem: com.intellij.openapi.diff.impl.patch.CharsetEP
+<+>UTF-8
+===================================================================
+diff --git a/app/src/test/java/com/example/alarm_group/ExampleUnitTest.java b/app/src/test/java/com/example/alarm_group/ExampleUnitTest.java
+new file mode 100644
+--- /dev/null	(date 1733397963866)
++++ b/app/src/test/java/com/example/alarm_group/ExampleUnitTest.java	(date 1733397963866)
+@@ -0,0 +1,17 @@
++package com.example.alarm_group;
++
++import org.junit.Test;
++
++import static org.junit.Assert.*;
++
++/**
++ * Example local unit test, which will execute on the development machine (host).
++ *
++ * @see <a href="http://d.android.com/tools/testing">Testing documentation</a>
++ */
++public class ExampleUnitTest {
++    @Test
++    public void addition_isCorrect() {
++        assertEquals(4, 2 + 2);
++    }
++}
+\ No newline at end of file
+Index: app/src/main/res/layout/activity_register.xml
+IDEA additional info:
+Subsystem: com.intellij.openapi.diff.impl.patch.BaseRevisionTextPatchEP
+<+><?xml version=\"1.0\" encoding=\"utf-8\"?>\r\n<LinearLayout xmlns:android=\"http://schemas.android.com/apk/res/android\"\r\n    android:layout_width=\"match_parent\"\r\n    android:layout_height=\"match_parent\"\r\n    android:orientation=\"vertical\"\r\n    android:gravity=\"center\"\r\n    android:padding=\"16dp\">\r\n\r\n    <!-- 이름 입력 -->\r\n    <EditText\r\n        android:id=\"@+id/edit_name\"\r\n        android:layout_width=\"match_parent\"\r\n        android:layout_height=\"wrap_content\"\r\n        android:hint=\"이름\" />\r\n\r\n    <!-- 이메일 입력 -->\r\n    <EditText\r\n        android:id=\"@+id/edit_email\"\r\n        android:layout_width=\"match_parent\"\r\n        android:layout_height=\"wrap_content\"\r\n        android:hint=\"이메일\"\r\n        android:inputType=\"textEmailAddress\"\r\n        android:layout_marginTop=\"8dp\" />\r\n\r\n    <!-- 비밀번호 입력 -->\r\n    <EditText\r\n        android:id=\"@+id/edit_password\"\r\n        android:layout_width=\"match_parent\"\r\n        android:layout_height=\"wrap_content\"\r\n        android:hint=\"비밀번호\"\r\n        android:inputType=\"textPassword\"\r\n        android:layout_marginTop=\"8dp\" />\r\n\r\n    <!-- 회원가입 버튼 -->\r\n    <Button\r\n        android:id=\"@+id/btn_sign_up\"\r\n        android:layout_width=\"match_parent\"\r\n        android:layout_height=\"wrap_content\"\r\n        android:text=\"회원가입\"\r\n        android:layout_marginTop=\"16dp\" />\r\n\r\n</LinearLayout>\r\n
+Subsystem: com.intellij.openapi.diff.impl.patch.CharsetEP
+<+>UTF-8
+===================================================================
+diff --git a/app/src/main/res/layout/activity_register.xml b/app/src/main/res/layout/activity_register.xml
+--- a/app/src/main/res/layout/activity_register.xml	(revision a187b657d3c68c5f8182792ffcde460510670d02)
++++ b/app/src/main/res/layout/activity_register.xml	(date 1733397963861)
+@@ -1,10 +1,13 @@
+ <?xml version="1.0" encoding="utf-8"?>
+ <LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
++    xmlns:app="http://schemas.android.com/apk/res-auto"
++    xmlns:tools="http://schemas.android.com/tools"
+     android:layout_width="match_parent"
+     android:layout_height="match_parent"
+     android:orientation="vertical"
+     android:gravity="center"
+-    android:padding="16dp">
++    android:padding="16dp"
++    tools:context=".RegisterActivity">
+ 
+     <!-- 이름 입력 -->
+     <EditText
+@@ -23,13 +26,23 @@
+         android:layout_marginTop="8dp" />
+ 
+     <!-- 비밀번호 입력 -->
+-    <EditText
+-        android:id="@+id/edit_password"
+-        android:layout_width="match_parent"
+-        android:layout_height="wrap_content"
+-        android:hint="비밀번호"
+-        android:inputType="textPassword"
+-        android:layout_marginTop="8dp" />
++    <com.google.android.material.textfield.TextInputLayout
++        android:id="@+id/password_input_layout"
++        android:layout_width="match_parent"
++        android:layout_height="wrap_content"
++        android:layout_marginTop="8dp"
++        app:helperText="4자리 이상의 숫자만 가능합니다.">
++
++        <!-- 비밀번호 EditText -->
++        <EditText
++            android:id="@+id/edit_password"
++            android:layout_width="match_parent"
++            android:layout_height="wrap_content"
++            android:hint="비밀번호"
++            android:inputType="textPassword"
++            android:importantForAccessibility="yes"
++            android:importantForAutofill="yes" />
++    </com.google.android.material.textfield.TextInputLayout>
+ 
+     <!-- 회원가입 버튼 -->
+     <Button
+@@ -40,3 +53,5 @@
+         android:layout_marginTop="16dp" />
+ 
+ </LinearLayout>
++
++
+Index: app/src/main/java/com/example/habittracker/AlarmSetting.java
+IDEA additional info:
+Subsystem: com.intellij.openapi.diff.impl.patch.CharsetEP
+<+>UTF-8
+===================================================================
+diff --git a/app/src/main/java/com/example/habittracker/AlarmSetting.java b/app/src/main/java/com/example/habittracker/AlarmSetting.java
+new file mode 100644
+--- /dev/null	(date 1733397963842)
++++ b/app/src/main/java/com/example/habittracker/AlarmSetting.java	(date 1733397963842)
+@@ -0,0 +1,230 @@
++package com.example.habittracker;
++
++import android.app.AlarmManager;
++import android.app.PendingIntent;
++import android.content.ContentValues;
++import android.content.Context;
++import android.content.Intent;
++import android.database.sqlite.SQLiteDatabase;
++import android.graphics.Color;
++import android.os.Bundle;
++import android.view.View;
++import android.widget.Button;
++import android.widget.EditText;
++import android.widget.RadioButton;
++import android.widget.RadioGroup;
++import android.widget.TextView;
++import android.widget.TimePicker;
++import android.widget.Toast;
++
++import androidx.appcompat.app.AppCompatActivity;
++
++import java.util.ArrayList;
++import java.util.Calendar;
++
++public class AlarmSetting extends AppCompatActivity {
++
++    private RadioGroup radioGroup;
++    private RadioButton rdoWeek, rdoDay;
++    private Button btnMon, btnTue, btnWed, btnThu, btnFri, btnSat, btnSun;
++    private TimePicker timePicker;
++    private TextView tvYear, tvMonth, tvDay, tvHour, tvMinute;
++    private EditText etFrequency;
++    private Button btnSetAlarm;
++
++    private int[] daySelection = new int[7]; // 요일 선택 상태 저장 (0: 선택 해제, 1: 선택됨)
++    private ArrayList<Button> dayButtons = new ArrayList<>(); // 요일 버튼 리스트
++
++    private int goalId; // 전달받은 목표 ID
++    private NotificationDatabaseHelper dbHelper; // 데이터베이스 헬퍼 클래스
++
++    @Override
++    protected void onCreate(Bundle savedInstanceState) {
++        super.onCreate(savedInstanceState);
++        setContentView(R.layout.activity_alarm);
++
++        dbHelper = new NotificationDatabaseHelper(this);
++
++        // 전달받은 목표 ID 확인
++        goalId = getIntent().getIntExtra("goal_id", -1);
++        if (goalId == -1) {
++            Toast.makeText(this, "유효하지 않은 목표입니다.", Toast.LENGTH_SHORT).show();
++            finish();
++            return;
++        }
++
++        initializeViews();
++        setupListeners();
++    }
++
++    private void initializeViews() {
++        // UI 요소 초기화
++        radioGroup = findViewById(R.id.radioGroup);
++        rdoWeek = findViewById(R.id.rdoWeek);
++        rdoDay = findViewById(R.id.rdoDay);
++
++        btnMon = findViewById(R.id.btnMon);
++        btnTue = findViewById(R.id.btnTue);
++        btnWed = findViewById(R.id.btnWed);
++        btnThu = findViewById(R.id.btnThu);
++        btnFri = findViewById(R.id.btnFri);
++        btnSat = findViewById(R.id.btnSat);
++        btnSun = findViewById(R.id.btnSun);
++
++        timePicker = findViewById(R.id.timePicker1);
++        timePicker.setIs24HourView(true);
++
++        tvYear = findViewById(R.id.tvYear);
++        tvMonth = findViewById(R.id.tvMonth);
++        tvDay = findViewById(R.id.tvDay);
++        tvHour = findViewById(R.id.tvHour);
++        tvMinute = findViewById(R.id.tvMinute);
++
++        etFrequency = findViewById(R.id.etFrequency);
++        btnSetAlarm = findViewById(R.id.btnSetAlarm);
++
++        // 요일 버튼 리스트 초기화
++        dayButtons.add(btnMon);
++        dayButtons.add(btnTue);
++        dayButtons.add(btnWed);
++        dayButtons.add(btnThu);
++        dayButtons.add(btnFri);
++        dayButtons.add(btnSat);
++        dayButtons.add(btnSun);
++
++        setViewVisibility(false, false);
++    }
++
++    private void setupListeners() {
++        // 라디오 버튼 선택 이벤트
++        radioGroup.setOnCheckedChangeListener((group, checkedId) -> {
++            if (checkedId == R.id.rdoWeek) {
++                setViewVisibility(true, true);
++            } else if (checkedId == R.id.rdoDay) {
++                setViewVisibility(true, false);
++            }
++        });
++
++        // 요일 버튼 클릭 이벤트
++        for (int i = 0; i < dayButtons.size(); i++) {
++            int index = i;
++            dayButtons.get(i).setOnClickListener(view -> toggleDaySelection(index, dayButtons.get(index)));
++        }
++
++        // 알림 설정 버튼
++        btnSetAlarm.setOnClickListener(v -> {
++            if (rdoWeek.isChecked()) {
++                setAlarms();
++            } else if (rdoDay.isChecked()) {
++                setDailyAlarm();
++            }
++        });
++
++        timePicker.setOnTimeChangedListener((view, hourOfDay, minute) -> updateDateTimeText());
++    }
++
++    private void saveAlarmToDatabase(String reminderTime, int frequency, boolean isActive) {
++        SQLiteDatabase db = dbHelper.getWritableDatabase();
++        ContentValues values = new ContentValues();
++        values.put(NotificationDatabaseHelper.COLUMN_GOAL_ID, goalId);
++        values.put(NotificationDatabaseHelper.COLUMN_TIME, reminderTime);
++        values.put(NotificationDatabaseHelper.COLUMN_FREQUENCY, frequency);
++        values.put("is_active", isActive ? 1 : 0);
++
++        long rowId = db.insert(NotificationDatabaseHelper.TABLE_REMINDER, null, values);
++        if (rowId > 0) {
++            Toast.makeText(this, "알림 설정이 저장되었습니다.", Toast.LENGTH_SHORT).show();
++        }
++    }
++
++    private void setViewVisibility(boolean showAlarmSettings, boolean showDayButtons) {
++        int alarmVisibility = showAlarmSettings ? View.VISIBLE : View.GONE;
++        int dayVisibility = showDayButtons ? View.VISIBLE : View.GONE;
++
++        timePicker.setVisibility(alarmVisibility);
++        etFrequency.setVisibility(alarmVisibility);
++        btnSetAlarm.setVisibility(alarmVisibility);
++
++        for (Button button : dayButtons) {
++            button.setVisibility(dayVisibility);
++        }
++    }
++
++    private void toggleDaySelection(int index, Button button) {
++        daySelection[index] = 1 - daySelection[index];
++        button.setBackgroundColor(daySelection[index] == 1 ? Color.GREEN : Color.LTGRAY);
++    }
++
++    private void setAlarms() {
++        AlarmManager alarmManager = (AlarmManager) getSystemService(Context.ALARM_SERVICE);
++
++        int hour = timePicker.getHour();
++        int minute = timePicker.getMinute();
++
++        for (int i = 0; i < daySelection.length; i++) {
++            if (daySelection[i] == 1) {
++                Calendar calendar = Calendar.getInstance();
++                calendar.set(Calendar.DAY_OF_WEEK, getDayOfWeek(i));
++                calendar.set(Calendar.HOUR_OF_DAY, hour);
++                calendar.set(Calendar.MINUTE, minute);
++                calendar.set(Calendar.SECOND, 0);
++
++                if (calendar.before(Calendar.getInstance())) {
++                    calendar.add(Calendar.WEEK_OF_YEAR, 1);
++                }
++
++                Intent intent = new Intent(this, AlarmReceiver.class);
++                intent.putExtra("goal_id", goalId);
++                intent.putExtra("day", dayButtons.get(i).getText().toString());
++                PendingIntent pendingIntent = PendingIntent.getBroadcast(
++                        this, goalId * 10 + i, intent, PendingIntent.FLAG_UPDATE_CURRENT
++                );
++
++                if (alarmManager != null) {
++                    alarmManager.setExact(AlarmManager.RTC_WAKEUP, calendar.getTimeInMillis(), pendingIntent);
++                }
++            }
++        }
++    }
++
++    private void setDailyAlarm() {
++        AlarmManager alarmManager = (AlarmManager) getSystemService(Context.ALARM_SERVICE);
++
++        int hour = timePicker.getHour();
++        int minute = timePicker.getMinute();
++
++        Calendar calendar = Calendar.getInstance();
++        calendar.set(Calendar.HOUR_OF_DAY, hour);
++        calendar.set(Calendar.MINUTE, minute);
++        calendar.set(Calendar.SECOND, 0);
++
++        if (calendar.before(Calendar.getInstance())) {
++            calendar.add(Calendar.DAY_OF_YEAR, 1);
++        }
++
++        Intent intent = new Intent(this, AlarmReceiver.class);
++        intent.putExtra("goal_id", goalId);
++        intent.putExtra("type", "daily");
++        PendingIntent pendingIntent = PendingIntent.getBroadcast(
++                this, goalId, intent, PendingIntent.FLAG_UPDATE_CURRENT
++        );
++
++        if (alarmManager != null) {
++            alarmManager.setExact(AlarmManager.RTC_WAKEUP, calendar.getTimeInMillis(), pendingIntent);
++        }
++
++        String time = String.format("%02d:%02d", hour, minute);
++        saveAlarmToDatabase(time, 1, true);
++    }
++
++    private int getDayOfWeek(int index) {
++        return Calendar.MONDAY + index;
++    }
++
++    private void updateDateTimeText() {
++        Calendar calendar = Calendar.getInstance();
++        tvYear.setText(String.valueOf(calendar.get(Calendar.YEAR)));
++        tvMonth.setText(String.format("%02d", calendar.get(Calendar.MONTH) + 1));
++        tvDay.setText(String.format("%02d", calendar.get(Calendar.DAY_OF_MONTH)));
++    }
++}
+Index: app/src/main/java/com/example/habittracker/GoalDetailsActivity.java
+IDEA additional info:
+Subsystem: com.intellij.openapi.diff.impl.patch.CharsetEP
+<+>UTF-8
+===================================================================
+diff --git a/app/src/main/java/com/example/habittracker/GoalDetailsActivity.java b/app/src/main/java/com/example/habittracker/GoalDetailsActivity.java
+new file mode 100644
+--- /dev/null	(date 1733397963844)
++++ b/app/src/main/java/com/example/habittracker/GoalDetailsActivity.java	(date 1733397963844)
+@@ -0,0 +1,68 @@
++package com.example.habittracker;
++
++import android.database.Cursor;
++import android.database.sqlite.SQLiteDatabase;
++import android.os.Bundle;
++import android.widget.TextView;
++
++import androidx.appcompat.app.AppCompatActivity;
++
++public class GoalDetailsActivity extends AppCompatActivity {
++    private TextView tvHabitDetails;
++
++    @Override
++    protected void onCreate(Bundle savedInstanceState) {
++        super.onCreate(savedInstanceState);
++        setContentView(R.layout.activity_goal_details);
++
++        // UI 요소 초기화
++        tvHabitDetails = findViewById(R.id.tv_habit_details);
++
++        // 데이터베이스에서 데이터를 가져와 TextView에 표시
++        loadHabitsFromDatabase();
++    }
++
++    private void loadHabitsFromDatabase() {
++        MyDatabaseHelper dbHelper = new MyDatabaseHelper(this);
++        SQLiteDatabase db = null;
++        Cursor cursor = null;
++
++        try {
++            // UserManager를 사용해 현재 로그인한 사용자 ID 가져오기
++            UserManager userManager = new UserManager(this);
++            String userId = userManager.getUserId();
++
++            if (userId == null) {
++                tvHabitDetails.setText("로그인 정보를 확인할 수 없습니다.");
++                return;
++            }
++
++            db = dbHelper.getReadableDatabase();
++
++            // Goal 테이블에서 현재 로그인한 사용자의 데이터만 조회
++            cursor = db.rawQuery(
++                    "SELECT goal_name FROM Goal WHERE user_id = ?",
++                    new String[]{userId}
++            );
++
++            StringBuilder habitDetails = new StringBuilder();
++
++            // 데이터가 없을 경우 처리
++            if (cursor.getCount() == 0) {
++                habitDetails.append("No habits found for the current user.\n");
++            } else {
++                // 데이터 읽기
++                while (cursor.moveToNext()) {
++                    String habitName = cursor.getString(cursor.getColumnIndex("goal_name"));
++                    habitDetails.append("Habit Name: ").append(habitName).append("\n");
++                }
++            }
++            tvHabitDetails.setText(habitDetails.toString());
++        } catch (Exception e) {
++            tvHabitDetails.setText("Error loading data: " + e.getMessage());
++        } finally {
++            if (cursor != null) cursor.close();
++            if (db != null) db.close();
++        }
++    }
++}
+\ No newline at end of file
+Index: app/src/main/java/com/example/habittracker/StatisticsActivity.java
+IDEA additional info:
+Subsystem: com.intellij.openapi.diff.impl.patch.CharsetEP
+<+>UTF-8
+===================================================================
+diff --git a/app/src/main/java/com/example/habittracker/StatisticsActivity.java b/app/src/main/java/com/example/habittracker/StatisticsActivity.java
+new file mode 100644
+--- /dev/null	(date 1733397963854)
++++ b/app/src/main/java/com/example/habittracker/StatisticsActivity.java	(date 1733397963854)
+@@ -0,0 +1,40 @@
++package com.example.habittracker;
++
++import android.database.Cursor;
++import android.os.Bundle;
++import android.widget.TextView;
++import androidx.appcompat.app.AppCompatActivity;
++import androidx.recyclerview.widget.LinearLayoutManager;
++import androidx.recyclerview.widget.RecyclerView;
++
++public class StatisticsActivity extends AppCompatActivity {
++
++    private RecyclerView weeklyRecyclerView, monthlyRecyclerView;
++    private HabitDatabaseHelper dbHelper;
++    private TextView weeklyStatsText, monthlyStatsText;
++
++    @Override
++    protected void onCreate(Bundle savedInstanceState) {
++        super.onCreate(savedInstanceState);
++        setContentView(R.layout.activity_statistics);
++
++        dbHelper = new HabitDatabaseHelper(this);
++        weeklyRecyclerView = findViewById(R.id.weekRecyclerView);
++        monthlyRecyclerView = findViewById(R.id.monthRecyclerView);
++        weeklyStatsText = findViewById(R.id.weekTextView);
++        monthlyStatsText = findViewById(R.id.monthTextView);
++
++        // 주별 성취도 데이터 가져오기
++        Cursor weeklyData = dbHelper.getWeeklyAchievementData();
++        WeeklyStatsAdapter weeklyAdapter = new WeeklyStatsAdapter(this, weeklyData);
++        weeklyRecyclerView.setLayoutManager(new LinearLayoutManager(this));
++        weeklyRecyclerView.setAdapter(weeklyAdapter);
++
++        // 월별 성취도 데이터 가져오기
++        Cursor monthlyData = dbHelper.getMonthlyAchievementData();
++        MonthlyStatsAdapter monthlyAdapter = new MonthlyStatsAdapter(this, monthlyData);
++        monthlyRecyclerView.setLayoutManager(new LinearLayoutManager(this));
++        monthlyRecyclerView.setAdapter(monthlyAdapter);
++    }
++}
++
+Index: app/src/main/java/com/example/habittracker/GoalcheckMainActivity.java
+IDEA additional info:
+Subsystem: com.intellij.openapi.diff.impl.patch.CharsetEP
+<+>UTF-8
+===================================================================
+diff --git a/app/src/main/java/com/example/habittracker/GoalcheckMainActivity.java b/app/src/main/java/com/example/habittracker/GoalcheckMainActivity.java
+new file mode 100644
+--- /dev/null	(date 1733397963845)
++++ b/app/src/main/java/com/example/habittracker/GoalcheckMainActivity.java	(date 1733397963845)
+@@ -0,0 +1,76 @@
++package com.example.habittracker;
++
++import android.os.Bundle;
++import android.widget.Button;
++import android.widget.CheckBox;
++import android.widget.EditText;
++import android.widget.Toast;
++
++import androidx.appcompat.app.AppCompatActivity;
++import androidx.recyclerview.widget.LinearLayoutManager;
++import androidx.recyclerview.widget.RecyclerView;
++
++import java.util.ArrayList;
++
++public class GoalcheckMainActivity extends AppCompatActivity {
++    private EditText etHabitName, etTargetCount;
++    private CheckBox cbMonday, cbTuesday;
++    private Button btnSaveHabit;
++    private RecyclerView goalRecyclerView;
++    private com.example.habittracker.GoalAdapter goalAdapter;
++    private ArrayList<String> goalList;
++
++    @Override
++    protected void onCreate(Bundle savedInstanceState) {
++        super.onCreate(savedInstanceState);
++        setContentView(R.layout.activity_main);
++
++        // 목표 리스트 초기화
++        goalList = new ArrayList<>();
++        goalAdapter = new com.example.habittracker.GoalAdapter(goalList);
++
++        // RecyclerView 설정
++        goalRecyclerView.setLayoutManager(new LinearLayoutManager(this));
++        goalRecyclerView.setAdapter(goalAdapter);
++
++        // 저장 버튼 클릭 이벤트
++        btnSaveHabit.setOnClickListener(v -> {
++            String habitName = etHabitName.getText().toString();
++            int targetCount = Integer.parseInt(etTargetCount.getText().toString());
++            String repeatDays = getRepeatDays(); // 요일 선택 데이터 처리
++
++            // 데이터 유효성 검사
++            if (habitName.isEmpty() || targetCount <= 0) {
++                Toast.makeText(this, "Please fill all fields!", Toast.LENGTH_SHORT).show();
++                return;
++            }
++
++            // 목표 추가
++            goalList.add(0, habitName);
++            goalAdapter.notifyItemInserted(0); // RecyclerView 업데이트
++            // RecyclerView를 맨 위로 스크롤
++            goalRecyclerView.scrollToPosition(0);
++            etHabitName.setText("");
++            etTargetCount.setText("");// 입력란 초기화
++
++            // 데이터베이스에 저장
++            saveHabitToDatabase(habitName, repeatDays, targetCount);
++        });
++    }
++
++    private String getRepeatDays() {
++        // 요일 선택 데이터를 처리 (예: "1,0,1,0,0,0,1")
++        StringBuilder repeatDays = new StringBuilder();
++        repeatDays.append(cbMonday.isChecked() ? "1," : "0,");
++        repeatDays.append(cbTuesday.isChecked() ? "1," : "0,");
++        // 다른 요일도 적기
++        return repeatDays.toString();
++    }
++
++    private void saveHabitToDatabase(String name, String repeatDays, int targetCount) {
++        // SQLite 통해 데이터베이스에 저장 구현
++        // Habit habit = new Habit(name, repeatDays, targetCount);
++
++        Toast.makeText(this, "Habit Saved!", Toast.LENGTH_SHORT).show();
++    }
++}
+\ No newline at end of file
+Index: app/src/main/res/layout/activity_main.xml
+IDEA additional info:
+Subsystem: com.intellij.openapi.diff.impl.patch.BaseRevisionTextPatchEP
+<+><?xml version=\"1.0\" encoding=\"utf-8\"?>\r\n<LinearLayout xmlns:android=\"http://schemas.android.com/apk/res/android\"\r\n    android:layout_width=\"match_parent\"\r\n    android:layout_height=\"match_parent\"\r\n    android:orientation=\"vertical\"\r\n    android:padding=\"16dp\">\r\n\r\n    <Button\r\n        android:id=\"@+id/btnLogout\"\r\n        android:layout_width=\"match_parent\"\r\n        android:layout_height=\"wrap_content\"\r\n        android:text=\"Logout\" />\r\n</LinearLayout>\r\n
+Subsystem: com.intellij.openapi.diff.impl.patch.CharsetEP
+<+>UTF-8
+===================================================================
+diff --git a/app/src/main/res/layout/activity_main.xml b/app/src/main/res/layout/activity_main.xml
+--- a/app/src/main/res/layout/activity_main.xml	(revision a187b657d3c68c5f8182792ffcde460510670d02)
++++ b/app/src/main/res/layout/activity_main.xml	(date 1733397963860)
+@@ -1,4 +1,5 @@
+ <?xml version="1.0" encoding="utf-8"?>
++
+ <LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+     android:layout_width="match_parent"
+     android:layout_height="match_parent"
+@@ -10,4 +11,13 @@
+         android:layout_width="match_parent"
+         android:layout_height="wrap_content"
+         android:text="Logout" />
++
++    <Button
++        android:id="@+id/btnGoalSetting"
++        android:layout_width="wrap_content"
++        android:layout_height="wrap_content"
++        android:layout_gravity="center"
++        android:text="목표 설정" />
++
+ </LinearLayout>
++
+Index: app/src/main/java/com/example/habittracker/AddGoalActivity.java
+IDEA additional info:
+Subsystem: com.intellij.openapi.diff.impl.patch.CharsetEP
+<+>UTF-8
+===================================================================
+diff --git a/app/src/main/java/com/example/habittracker/AddGoalActivity.java b/app/src/main/java/com/example/habittracker/AddGoalActivity.java
+new file mode 100644
+--- /dev/null	(date 1733397963840)
++++ b/app/src/main/java/com/example/habittracker/AddGoalActivity.java	(date 1733397963840)
+@@ -0,0 +1,151 @@
++package com.example.habittracker;
++
++import android.content.ContentValues;
++import android.content.Intent;
++import android.database.sqlite.SQLiteDatabase;
++import android.os.Bundle;
++import android.widget.Button;
++import android.widget.CheckBox;
++import android.widget.EditText;
++import android.widget.Switch;
++import android.widget.Toast;
++
++import androidx.appcompat.app.AppCompatActivity;
++
++public class AddGoalActivity extends AppCompatActivity {
++    // UI 요소 선언
++    private EditText etGoalName, etTargetCount, etStartDate, etEndDate;
++    private Switch swReminderEnabled;
++    private CheckBox cbMonday, cbTuesday, cbWednesday, cbThursday, cbFriday, cbSaturday, cbSunday;
++    private Button btnSaveHabit;
++    private MyDatabaseHelper dbHelper;
++    private UserManager userManager; // UserManager 선언
++
++    @Override
++    protected void onCreate(Bundle savedInstanceState) {
++        super.onCreate(savedInstanceState);
++        setContentView(R.layout.activity_add_goal);
++
++        // UserManager 초기화
++        userManager = new UserManager(this);
++
++        // 로그인 상태 확인
++        if (!userManager.isLoggedIn()) {
++            Toast.makeText(this, "로그인 상태가 아닙니다. 다시 로그인해주세요.", Toast.LENGTH_SHORT).show();
++            finish(); // 액티비티 종료
++            return;
++        }
++
++        // UI 요소 초기화
++        etGoalName = findViewById(R.id.et_goal_name);
++        etTargetCount = findViewById(R.id.et_target_count);
++        etStartDate = findViewById(R.id.et_start_date);
++        etEndDate = findViewById(R.id.et_end_date);
++        swReminderEnabled = findViewById(R.id.sw_reminder_enabled);
++        cbMonday = findViewById(R.id.cb_monday);
++        cbTuesday = findViewById(R.id.cb_tuesday);
++        cbWednesday = findViewById(R.id.cb_wednesday);
++        cbThursday = findViewById(R.id.cb_thursday);
++        cbFriday = findViewById(R.id.cb_friday);
++        cbSaturday = findViewById(R.id.cb_saturday);
++        cbSunday = findViewById(R.id.cb_sunday);
++        btnSaveHabit = findViewById(R.id.btn_save_habit);
++        dbHelper = new MyDatabaseHelper(this);
++
++        // 저장 버튼 클릭 이벤트
++        btnSaveHabit.setOnClickListener(v -> {
++            saveHabit();
++            Intent intent = new Intent(AddGoalActivity.this, GoalDetailsActivity.class);
++            startActivity(intent);
++        });
++    }
++
++    // 요일 데이터 가져오기 메소드
++    private String getRepeatDays() {
++        String repeatDays = (cbMonday.isChecked() ? "1," : "0,") +
++                (cbTuesday.isChecked() ? "1," : "0,") +
++                (cbWednesday.isChecked() ? "1," : "0,") +
++                (cbThursday.isChecked() ? "1," : "0,") +
++                (cbFriday.isChecked() ? "1," : "0,") +
++                (cbSaturday.isChecked() ? "1," : "0,") +
++                (cbSunday.isChecked() ? "1" : "0"); // 마지막 값은 콤마 없이 추가
++        return repeatDays;
++    }
++
++    // 습관 저장 메서드
++    private void saveHabit() {
++        String userId = userManager.getUserId(); // 로그인된 사용자 ID 가져오기
++        if (userId == null) {
++            Toast.makeText(this, "사용자 정보를 확인할 수 없습니다. 다시 로그인해주세요.", Toast.LENGTH_SHORT).show();
++            return;
++        }
++
++        String goalName = etGoalName.getText().toString().trim();
++        String startDate = etStartDate.getText().toString().trim();
++        String endDate = etEndDate.getText().toString().trim();
++        String repeatDays = getRepeatDays();
++        int targetCount;
++        boolean reminderEnabled = swReminderEnabled.isChecked();
++
++        // 데이터 유효성 검사
++        if (goalName.isEmpty()) {
++            Toast.makeText(this, "목표 이름을 입력하세요!", Toast.LENGTH_SHORT).show();
++            return;
++        }
++        if (startDate.isEmpty()) {
++            Toast.makeText(this, "시작 날짜를 입력하세요!", Toast.LENGTH_SHORT).show();
++            return;
++        }
++
++        if (!isValidDate(startDate)) {
++            Toast.makeText(this, "올바른 시작 날짜 형식이 아닙니다! (YYYY-MM-DD)", Toast.LENGTH_SHORT).show();
++            return;
++        }
++        if (!endDate.isEmpty() && !isValidDate(endDate)) {
++            Toast.makeText(this, "올바른 종료 날짜 형식이 아닙니다! (YYYY-MM-DD)", Toast.LENGTH_SHORT).show();
++            return;
++        }
++
++        try {
++            targetCount = Integer.parseInt(etTargetCount.getText().toString().trim());
++            if (targetCount <= 0) {
++                Toast.makeText(this, "반복 횟수는 1 이상이어야 합니다!", Toast.LENGTH_SHORT).show();
++                return;
++            }
++        } catch (NumberFormatException e) {
++            Toast.makeText(this, "올바른 반복 횟수를 입력하세요!", Toast.LENGTH_SHORT).show();
++            return;
++        }
++
++        // 데이터베이스 저장
++        SQLiteDatabase db = null;
++        try {
++            db = dbHelper.getWritableDatabase();
++            ContentValues values = new ContentValues();
++            values.put("user_id", userId); // 로그인된 사용자 ID 저장
++            values.put("goal_name", goalName);
++            values.put("start_date", startDate);
++            values.put("end_date", endDate.isEmpty() ? null : endDate);
++            values.put("repeat_days", repeatDays); // 반복 요일
++            values.put("target_count", targetCount); // 하루 반복 횟수
++            values.put("reminder_enabled", reminderEnabled ? 1 : 0);
++
++            long result = db.insert("Goal", null, values);
++            if (result == -1) {
++                Toast.makeText(this, "목표 저장에 실패했습니다!", Toast.LENGTH_SHORT).show();
++            } else {
++                Toast.makeText(this, "목표가 저장되었습니다!", Toast.LENGTH_SHORT).show();
++            }
++        } catch (Exception e) {
++            Toast.makeText(this, "Database error: " + e.getMessage(), Toast.LENGTH_SHORT).show();
++        } finally {
++            if (db != null) db.close();
++        }
++    }
++
++    // 날짜 유효성 검사
++    private boolean isValidDate(String date) {
++        String regex = "\\d{4}-\\d{2}-\\d{2}";
++        return date.matches(regex);
++    }
++}
+\ No newline at end of file
+Index: app/src/main/java/com/example/habittracker/NotificationDatabaseHelper.java
+IDEA additional info:
+Subsystem: com.intellij.openapi.diff.impl.patch.CharsetEP
+<+>UTF-8
+===================================================================
+diff --git a/app/src/main/java/com/example/habittracker/NotificationDatabaseHelper.java b/app/src/main/java/com/example/habittracker/NotificationDatabaseHelper.java
+new file mode 100644
+--- /dev/null	(date 1733397963851)
++++ b/app/src/main/java/com/example/habittracker/NotificationDatabaseHelper.java	(date 1733397963851)
+@@ -0,0 +1,42 @@
++package com.example.habittracker;
++
++import android.content.Context;
++import android.database.sqlite.SQLiteDatabase;
++import android.database.sqlite.SQLiteOpenHelper;
++
++public class NotificationDatabaseHelper extends SQLiteOpenHelper {
++    private static final String DATABASE_NAME = "notifications.db";
++    private static final int DATABASE_VERSION = 2; // 버전 업데이트 (1 -> 2)
++
++    // Table and columns
++    public static final String TABLE_REMINDER = "Reminder";
++    public static final String COLUMN_ID = "reminder_id";
++    public static final String COLUMN_GOAL_ID = "goal_id";
++    public static final String COLUMN_TIME = "reminder_time";
++    public static final String COLUMN_FREQUENCY = "frequency";
++    public static final String COLUMN_IS_ACTIVE = "is_active";
++
++    public NotificationDatabaseHelper(Context context) {
++        super(context, DATABASE_NAME, null, DATABASE_VERSION);
++    }
++
++    @Override
++    public void onCreate(SQLiteDatabase db) {
++        // Create Reminder table
++        String CREATE_REMINDER_TABLE = "CREATE TABLE " + TABLE_REMINDER + " (" +
++                COLUMN_ID + " INTEGER PRIMARY KEY AUTOINCREMENT, " +
++                COLUMN_GOAL_ID + " INTEGER NOT NULL, " +
++                COLUMN_TIME + " TEXT NOT NULL, " +
++                COLUMN_FREQUENCY + " INTEGER NOT NULL, " +
++                COLUMN_IS_ACTIVE + " BOOLEAN DEFAULT 1)"; // is_active 기본값 추가
++        db.execSQL(CREATE_REMINDER_TABLE);
++    }
++
++    @Override
++    public void onUpgrade(SQLiteDatabase db, int oldVersion, int newVersion) {
++        // 데이터베이스 버전이 1에서 2로 업그레이드되는 경우
++        if (oldVersion < 2) {
++            db.execSQL("ALTER TABLE " + TABLE_REMINDER + " ADD COLUMN " + COLUMN_IS_ACTIVE + " BOOLEAN DEFAULT 1");
++        }
++    }
++}
+Index: app/src/main/java/com/example/habittracker/HabitDatabaseHelper.java
+IDEA additional info:
+Subsystem: com.intellij.openapi.diff.impl.patch.CharsetEP
+<+>UTF-8
+===================================================================
+diff --git a/app/src/main/java/com/example/habittracker/HabitDatabaseHelper.java b/app/src/main/java/com/example/habittracker/HabitDatabaseHelper.java
+new file mode 100644
+--- /dev/null	(date 1733397963846)
++++ b/app/src/main/java/com/example/habittracker/HabitDatabaseHelper.java	(date 1733397963846)
+@@ -0,0 +1,131 @@
++package com.example.habittracker;
++
++import android.content.ContentValues;
++import android.database.Cursor;
++import android.database.sqlite.SQLiteDatabase;
++import android.database.sqlite.SQLiteOpenHelper;
++import android.content.Context;
++
++public class HabitDatabaseHelper extends SQLiteOpenHelper {
++
++    private static final String DATABASE_NAME = "habit.db";  // 데이터베이스 이름
++    private static final int DATABASE_VERSION = 1;  // 데이터베이스 버전
++
++    // 테이블 생성 쿼리
++    private static final String CREATE_USER_TABLE =
++            "CREATE TABLE IF NOT EXISTS User (" +
++                    "user_id INTEGER PRIMARY KEY AUTOINCREMENT, " +
++                    "username TEXT NOT NULL, " +
++                    "email TEXT NOT NULL UNIQUE, " +
++                    "password TEXT NOT NULL);";
++
++    private static final String CREATE_GOAL_TABLE =
++            "CREATE TABLE IF NOT EXISTS Goal (" +
++                    "goal_id INTEGER PRIMARY KEY AUTOINCREMENT, " +
++                    "user_id INTEGER NOT NULL, " +
++                    "goal_name TEXT NOT NULL, " +
++                    "creation_date TEXT NOT NULL, " +
++                    "start_date TEXT NOT NULL, " +
++                    "end_date TEXT, " +
++                    "reminder_enabled INTEGER NOT NULL, " +
++                    "FOREIGN KEY (user_id) REFERENCES User(user_id));";
++
++    private static final String CREATE_ACHIEVEMENT_CHECK_TABLE =
++            "CREATE TABLE IF NOT EXISTS Achievement_Check (" +
++                    "achievement_id INTEGER PRIMARY KEY AUTOINCREMENT, " +
++                    "goal_id INTEGER NOT NULL, " +
++                    "check_date TEXT NOT NULL, " +
++                    "achieved INTEGER NOT NULL, " +
++                    "weekly_achievement_count INTEGER NOT NULL DEFAULT 0, " +
++                    "FOREIGN KEY (goal_id) REFERENCES Goal(goal_id));";
++
++    private static final String CREATE_STATISTICS_TABLE =
++            "CREATE TABLE IF NOT EXISTS Statistics (" +
++                    "statistics_id INTEGER PRIMARY KEY AUTOINCREMENT, " +
++                    "user_id INTEGER NOT NULL, " +
++                    "goal_id INTEGER NOT NULL, " +
++                    "total_goal_days INTEGER NOT NULL, " +
++                    "achieved_days INTEGER NOT NULL, " +
++                    "achievement_rate DECIMAL(5,2) NOT NULL, " +
++                    "FOREIGN KEY (user_id) REFERENCES User(user_id), " +
++                    "FOREIGN KEY (goal_id) REFERENCES Goal(goal_id));";
++
++    private static final String CREATE_REMINDER_TABLE =
++            "CREATE TABLE IF NOT EXISTS Reminder (" +
++                    "reminder_id INTEGER PRIMARY KEY AUTOINCREMENT, " +
++                    "goal_id INTEGER NOT NULL, " +
++                    "reminder_time TEXT NOT NULL, " +
++                    "frequency TEXT NOT NULL, " +
++                    "is_active INTEGER NOT NULL, " +
++                    "FOREIGN KEY (goal_id) REFERENCES Goal(goal_id));";
++
++    // 생성자
++    public HabitDatabaseHelper(Context context) {
++        super(context, DATABASE_NAME, null, DATABASE_VERSION);
++    }
++
++    // 데이터베이스 생성
++    @Override
++    public void onCreate(SQLiteDatabase db) {
++        db.execSQL(CREATE_USER_TABLE);
++        db.execSQL(CREATE_GOAL_TABLE);
++        db.execSQL(CREATE_ACHIEVEMENT_CHECK_TABLE);
++        db.execSQL(CREATE_STATISTICS_TABLE);
++        db.execSQL(CREATE_REMINDER_TABLE);
++    }
++
++    // 데이터베이스 업그레이드
++    @Override
++    public void onUpgrade(SQLiteDatabase db, int oldVersion, int newVersion) {
++        // 데이터베이스 업그레이드 시 기존 데이터 삭제 후 재생성
++        db.execSQL("DROP TABLE IF EXISTS User");
++        db.execSQL("DROP TABLE IF EXISTS Goal");
++        db.execSQL("DROP TABLE IF EXISTS Achievement_Check");
++        db.execSQL("DROP TABLE IF EXISTS Statistics");
++        db.execSQL("DROP TABLE IF EXISTS Reminder");
++        onCreate(db);
++    }
++
++    // 회원가입: 사용자 정보 삽입
++    public boolean addUser(String username, String email, String password) {
++        SQLiteDatabase db = this.getWritableDatabase();
++        ContentValues values = new ContentValues();
++        values.put("username", username);
++        values.put("email", email);
++        values.put("password", password);
++
++        long result = db.insert("User", null, values);  // 사용자 정보 삽입
++        db.close();
++
++        return result != -1; // 성공적으로 삽입되었으면 true 반환
++    }
++
++    // 로그인: 사용자가 입력한 이메일과 비밀번호로 사용자 정보 조회
++    public boolean checkUser(String email, String password) {
++        SQLiteDatabase db = this.getReadableDatabase();
++        String query = "SELECT * FROM User WHERE email = ? AND password = ?";
++        Cursor cursor = db.rawQuery(query, new String[] {email, password});
++
++        boolean isValid = cursor.getCount() > 0;  // 이메일과 비밀번호가 일치하는 사용자가 있으면 true
++        cursor.close();
++        db.close();
++
++        return isValid;  // 유효한 사용자면 true, 아니면 false
++    }
++
++    // 주별 성취도 데이터 조회 (예시: week과 achievement_count를 반환)
++    public Cursor getWeeklyAchievementData() {
++        SQLiteDatabase db = this.getReadableDatabase();
++        String query = "SELECT strftime('%W', check_date) AS week, SUM(achieved) AS achievement_count FROM Achievement_Check GROUP BY week";
++        return db.rawQuery(query, null);
++    }
++
++    // 월별 성취도 데이터 조회 (예시: month과 achievement_count를 반환)
++    public Cursor getMonthlyAchievementData() {
++        SQLiteDatabase db = this.getReadableDatabase();
++        String query = "SELECT strftime('%m', check_date) AS month, SUM(achieved) AS achievement_count FROM Achievement_Check GROUP BY month";
++        return db.rawQuery(query, null);
++    }
++}
++
++
+Index: app/src/main/java/com/example/habittracker/WeeklyStatsAdapter.java
+IDEA additional info:
+Subsystem: com.intellij.openapi.diff.impl.patch.CharsetEP
+<+>UTF-8
+===================================================================
+diff --git a/app/src/main/java/com/example/habittracker/WeeklyStatsAdapter.java b/app/src/main/java/com/example/habittracker/WeeklyStatsAdapter.java
+new file mode 100644
+--- /dev/null	(date 1733397963856)
++++ b/app/src/main/java/com/example/habittracker/WeeklyStatsAdapter.java	(date 1733397963856)
+@@ -0,0 +1,52 @@
++package com.example.habittracker;
++
++import android.content.Context;
++import android.database.Cursor;
++import android.view.LayoutInflater;
++import android.view.View;
++import android.view.ViewGroup;
++import android.widget.TextView;
++import androidx.recyclerview.widget.RecyclerView;
++
++public class WeeklyStatsAdapter extends RecyclerView.Adapter<WeeklyStatsAdapter.ViewHolder> {
++
++    private Context context;
++    private Cursor cursor;
++
++    public WeeklyStatsAdapter(Context context, Cursor cursor) {
++        this.context = context;
++        this.cursor = cursor;
++    }
++
++    @Override
++    public ViewHolder onCreateViewHolder(ViewGroup parent, int viewType) {
++        View view = LayoutInflater.from(context).inflate(R.layout.stat_item, parent, false);
++        return new ViewHolder(view);
++    }
++
++    @Override
++    public void onBindViewHolder(ViewHolder holder, int position) {
++        if (cursor != null && cursor.moveToPosition(position)) {
++            String week = cursor.getString(cursor.getColumnIndex("week"));
++            int achievementCount = cursor.getInt(cursor.getColumnIndex("achievement_count"));
++            holder.weekTextView.setText("Week " + week);
++            holder.achievementCountTextView.setText("Achievements: " + achievementCount);
++        }
++    }
++
++    @Override
++    public int getItemCount() {
++        return cursor != null ? cursor.getCount() : 0;
++    }
++
++    public static class ViewHolder extends RecyclerView.ViewHolder {
++        TextView weekTextView, achievementCountTextView;
++
++        public ViewHolder(View itemView) {
++            super(itemView);
++            weekTextView = itemView.findViewById(R.id.weekTextView);
++            achievementCountTextView = itemView.findViewById(R.id.achievementCountTextView);
++        }
++    }
++}
++
+Index: app/src/main/res/values/colors.xml
+IDEA additional info:
+Subsystem: com.intellij.openapi.diff.impl.patch.BaseRevisionTextPatchEP
+<+><?xml version=\"1.0\" encoding=\"utf-8\"?>\r\n<resources>\r\n    <color name=\"black\">#FF000000</color>\r\n    <color name=\"white\">#FFFFFFFF</color>\r\n    <color name=\"purple_500\">#6200EE</color>\r\n\r\n\r\n</resources>
+Subsystem: com.intellij.openapi.diff.impl.patch.CharsetEP
+<+>UTF-8
+===================================================================
+diff --git a/app/src/main/res/values/colors.xml b/app/src/main/res/values/colors.xml
+--- a/app/src/main/res/values/colors.xml	(revision a187b657d3c68c5f8182792ffcde460510670d02)
++++ b/app/src/main/res/values/colors.xml	(date 1733397963865)
+@@ -4,5 +4,4 @@
+     <color name="white">#FFFFFFFF</color>
+     <color name="purple_500">#6200EE</color>
+ 
+-
+ </resources>
+\ No newline at end of file
+Index: app/src/androidTest/java/com/example/alarm_group/ExampleInstrumentedTest.java
+IDEA additional info:
+Subsystem: com.intellij.openapi.diff.impl.patch.CharsetEP
+<+>UTF-8
+===================================================================
+diff --git a/app/src/androidTest/java/com/example/alarm_group/ExampleInstrumentedTest.java b/app/src/androidTest/java/com/example/alarm_group/ExampleInstrumentedTest.java
+new file mode 100644
+--- /dev/null	(date 1733397963837)
++++ b/app/src/androidTest/java/com/example/alarm_group/ExampleInstrumentedTest.java	(date 1733397963837)
+@@ -0,0 +1,26 @@
++package com.example.alarm_group;
++
++import android.content.Context;
++
++import androidx.test.platform.app.InstrumentationRegistry;
++import androidx.test.ext.junit.runners.AndroidJUnit4;
++
++import org.junit.Test;
++import org.junit.runner.RunWith;
++
++import static org.junit.Assert.*;
++
++/**
++ * Instrumented test, which will execute on an Android device.
++ *
++ * @see <a href="http://d.android.com/tools/testing">Testing documentation</a>
++ */
++@RunWith(AndroidJUnit4.class)
++public class ExampleInstrumentedTest {
++    @Test
++    public void useAppContext() {
++        // Context of the app under test.
++        Context appContext = InstrumentationRegistry.getInstrumentation().getTargetContext();
++        assertEquals("com.example.alarm_group", appContext.getPackageName());
++    }
++}
+\ No newline at end of file
+Index: app/src/main/java/com/example/habittracker/MyDatabaseHelper.java
+IDEA additional info:
+Subsystem: com.intellij.openapi.diff.impl.patch.CharsetEP
+<+>UTF-8
+===================================================================
+diff --git a/app/src/main/java/com/example/habittracker/MyDatabaseHelper.java b/app/src/main/java/com/example/habittracker/MyDatabaseHelper.java
+new file mode 100644
+--- /dev/null	(date 1733397963850)
++++ b/app/src/main/java/com/example/habittracker/MyDatabaseHelper.java	(date 1733397963850)
+@@ -0,0 +1,89 @@
++package com.example.habittracker;
++
++
++import android.content.Context;
++import android.database.sqlite.SQLiteDatabase;
++import android.database.sqlite.SQLiteOpenHelper;
++
++public class MyDatabaseHelper extends SQLiteOpenHelper {
++    // Database Name and Version
++    private static final String DATABASE_NAME = "HabitTracker.db";
++    private static final int DATABASE_VERSION = 6; // 새로운 테이블 구조에 따라 버전 증가
++
++    // Constructor
++    public MyDatabaseHelper(Context context) {
++        super(context, DATABASE_NAME, null, DATABASE_VERSION);
++    }
++
++    // Create Tables
++    @Override
++    public void onCreate(SQLiteDatabase db) {
++        // 외래 키 활성화
++        db.execSQL("PRAGMA foreign_keys=ON;");
++
++        // User Table
++        db.execSQL("CREATE TABLE User (" +
++                "user_id INTEGER PRIMARY KEY AUTOINCREMENT, " +
++                "username TEXT NOT NULL, " +
++                "email TEXT NOT NULL, " +  // 이메일 컬럼 추가
++                "password TEXT NOT NULL);");
++
++        // Goal Table
++        db.execSQL("CREATE TABLE Goal (" +
++                "goal_id INTEGER PRIMARY KEY AUTOINCREMENT, " +
++                "user_id INTEGER NOT NULL, " +
++                "goal_name TEXT NOT NULL, " +
++                "creation_date DATE NOT NULL DEFAULT (date('now')), " +
++                "start_date DATE NOT NULL, " +
++                "end_date DATE, " +
++                "repeat_days TEXT NOT NULL, " + // 반복 요일
++                "target_count INTEGER NOT NULL, " + // 하루 반복 횟수
++                "reminder_enabled INTEGER NOT NULL, " +
++                "FOREIGN KEY (user_id) REFERENCES User(user_id));");
++
++        // Achievement_Check Table
++        db.execSQL("CREATE TABLE Achievement_Check (" +
++                "achievement_id INTEGER PRIMARY KEY AUTOINCREMENT, " +
++                "goal_id INTEGER NOT NULL, " +
++                "check_date DATE NOT NULL, " +
++                "achieved INTEGER NOT NULL, " +
++                "FOREIGN KEY (goal_id) REFERENCES Goal(goal_id));");
++
++        // Statistics Table
++        db.execSQL("CREATE TABLE Statistics (" +
++                "statistics_id INTEGER PRIMARY KEY AUTOINCREMENT, " +
++                "user_id INTEGER NOT NULL, " +
++                "goal_id INTEGER NOT NULL, " +
++                "total_goal_days INTEGER NOT NULL, " +
++                "achieved_days INTEGER NOT NULL, " +
++                "achievement_rate REAL NOT NULL, " + // DECIMAL(5,2)를 REAL로 변환
++                "FOREIGN KEY (user_id) REFERENCES User(user_id), " +
++                "FOREIGN KEY (goal_id) REFERENCES Goal(goal_id));");
++
++        // Reminder Table
++        db.execSQL("CREATE TABLE Reminder (" +
++                "reminder_id INTEGER PRIMARY KEY AUTOINCREMENT, " +
++                "goal_id INTEGER NOT NULL, " +
++                "reminder_time TIME NOT NULL, " +
++                "frequency TEXT NOT NULL, " +
++                "is_active INTEGER NOT NULL, " +
++                "FOREIGN KEY (goal_id) REFERENCES Goal(goal_id));");
++    }
++
++
++    // Upgrade Database
++    @Override
++    public void onUpgrade(SQLiteDatabase db, int oldVersion, int newVersion) {
++        // 기존 테이블 삭제
++        db.execSQL("DROP TABLE IF EXISTS Reminder");
++        db.execSQL("DROP TABLE IF EXISTS Statistics");
++        db.execSQL("DROP TABLE IF EXISTS Achievement_Check");
++        db.execSQL("DROP TABLE IF EXISTS Goal");
++        db.execSQL("DROP TABLE IF EXISTS User");
++
++        // 새 테이블 생성
++        onCreate(db);
++    }
++
++}
++
+Index: app/src/main/java/com/example/habittracker/AlarmReceiver.java
+IDEA additional info:
+Subsystem: com.intellij.openapi.diff.impl.patch.CharsetEP
+<+>UTF-8
+===================================================================
+diff --git a/app/src/main/java/com/example/habittracker/AlarmReceiver.java b/app/src/main/java/com/example/habittracker/AlarmReceiver.java
+new file mode 100644
+--- /dev/null	(date 1733397963841)
++++ b/app/src/main/java/com/example/habittracker/AlarmReceiver.java	(date 1733397963841)
+@@ -0,0 +1,66 @@
++package com.example.habittracker;
++
++import android.app.NotificationChannel;
++import android.app.NotificationManager;
++import android.content.BroadcastReceiver;
++import android.content.Context;
++import android.content.Intent;
++import android.util.Log;
++
++import androidx.core.app.NotificationCompat;
++
++public class AlarmReceiver extends BroadcastReceiver {
++
++    @Override
++    public void onReceive(Context context, Intent intent) {
++        // 전달받은 goal_id, day, type 추출
++        int goalId = intent.getIntExtra("goal_id", -1);
++        String day = intent.getStringExtra("day");
++        String type = intent.getStringExtra("type");
++
++        // 유효성 검사
++        if (goalId == -1) {
++            Log.e("AlarmReceiver", "Invalid Goal ID");
++            return;
++        }
++
++        // 알림 생성 준비
++        String channelId = "alarm_channel";
++        NotificationManager notificationManager =
++                (NotificationManager) context.getSystemService(Context.NOTIFICATION_SERVICE);
++
++        // 알림 채널 생성 (Android 8.0 이상)
++        if (android.os.Build.VERSION.SDK_INT >= android.os.Build.VERSION_CODES.O) {
++            NotificationChannel channel = new NotificationChannel(
++                    channelId, "알람 채널", NotificationManager.IMPORTANCE_HIGH
++            );
++            if (notificationManager != null) {
++                notificationManager.createNotificationChannel(channel);
++            }
++        }
++
++        // 알림 내용 설정
++        String contentText;
++        if ("daily".equals(type)) {
++            contentText = "오늘 설정된 알림이 울립니다!";
++        } else if (day != null) {
++            contentText = day + "에 설정된 알림이 울립니다!";
++        } else {
++            contentText = "설정된 알림이 울립니다!";
++        }
++
++        // 알림 빌더
++        NotificationCompat.Builder builder = new NotificationCompat.Builder(context, channelId)
++                .setSmallIcon(android.R.drawable.ic_dialog_info) // 기본 아이콘
++                .setContentTitle("알람 알림")
++                .setContentText(contentText)
++                .setPriority(NotificationCompat.PRIORITY_HIGH)
++                .setAutoCancel(true);
++
++        // 알림 표시
++        if (notificationManager != null) {
++            int notificationId = goalId * 1000 + (int) (System.currentTimeMillis() % 1000); // 고유 알림 ID 생성
++            notificationManager.notify(notificationId, builder.build());
++        }
++    }
++}
