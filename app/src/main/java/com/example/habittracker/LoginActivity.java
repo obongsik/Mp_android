@@ -24,6 +24,9 @@ public class LoginActivity extends AppCompatActivity {
         // 회원가입 텍스트
         TextView signUpText = findViewById(R.id.text_sign_up);
 
+        // 뒤로가기 버튼
+        Button backButton = findViewById(R.id.btn_back);
+
         HabitDatabaseHelper dbHelper = new HabitDatabaseHelper(this);
 
         // 로그인 버튼 클릭 리스너
@@ -54,5 +57,12 @@ public class LoginActivity extends AppCompatActivity {
             Intent intent = new Intent(LoginActivity.this, RegisterActivity.class);
             startActivity(intent);
         });
+
+        // 뒤로가기 버튼 클릭 리스너
+        backButton.setOnClickListener(v -> {
+            // 현재 액티비티 종료
+            finish();
+        });
     }
 }
+
