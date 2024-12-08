@@ -29,6 +29,11 @@ public class UserManager {
         editor.apply();
     }
 
+    public String getUserId() {
+        return sharedPreferences.getString(KEY_USER_ID, null);
+    }
+
+
     public boolean login(String email, String password) {
         String savedEmail = sharedPreferences.getString(KEY_EMAIL, null);
         String savedPassword = sharedPreferences.getString(KEY_PASSWORD, null);
