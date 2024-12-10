@@ -8,6 +8,8 @@ import android.content.Context;
 
 public class HabitDatabaseHelper extends SQLiteOpenHelper {
 
+
+
     private static final String DATABASE_NAME = "habit.db";  // 데이터베이스 이름
     private static final int DATABASE_VERSION = 1;  // 데이터베이스 버전
 

@@ -9,14 +9,14 @@ import android.widget.TextView;
 import android.widget.Toast;
 import androidx.appcompat.app.AppCompatActivity;
 public class LoginActivity extends AppCompatActivity {
-    private MyDatabaseHelper dbHelper;
+    private HabitDatabaseHelper dbHelper;
     private UserManager userManager;
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_login);
         // 데이터베이스 및 UserManager 초기화
-        dbHelper = new MyDatabaseHelper(this);
+        dbHelper = new HabitDatabaseHelper(this);
         userManager = new UserManager(this);
         // UI 요소 초기화
         Button loginButton = findViewById(R.id.btn_login);

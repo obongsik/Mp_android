@@ -23,13 +23,20 @@
         android:layout_marginTop="8dp" />
 
     <!-- 비밀번호 입력 -->
-    <EditText
-        android:id="@+id/edit_password"
+    <com.google.android.material.textfield.TextInputLayout
+        android:id="@+id/password_input_layout"
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
-        android:hint="비밀번호"
-        android:inputType="textPassword"
-        android:layout_marginTop="8dp" />
+        android:layout_marginTop="8dp"
+        android:hint="비밀번호">
+
+        <EditText
+            android:id="@+id/edit_password"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:inputType="textPassword" />
+
+    </com.google.android.material.textfield.TextInputLayout>
 
     <!-- 회원가입 버튼 -->
     <Button
@@ -50,3 +57,4 @@
         android:paddingEnd="24dp" />
 
 </LinearLayout>
+

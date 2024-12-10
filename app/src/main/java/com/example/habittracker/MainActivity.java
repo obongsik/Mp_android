@@ -30,7 +30,7 @@ public class MainActivity extends AppCompatActivity {
         // 버튼 초기화
         btnLogout = findViewById(R.id.btnLogout);
         btnBack = findViewById(R.id.btn_back); // 뒤로가기 버튼 연결
-        btnGoalSetting = findViewById(R.id.btnGoalSetting); // 목표 설정 버튼 연결
+        //btnGoalSetting = findViewById(R.id.btnGoalSetting); // 목표 설정 버튼 연결
 
         // 통계 화면으로 이동
         Intent statisticsIntent = new Intent(MainActivity.this, StatisticsActivity.class);
