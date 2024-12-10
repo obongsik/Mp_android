@@ -12,7 +12,6 @@
         android:supportsRtl="true"
         android:theme="@style/Theme.HabitTracker"
         tools:targetApi="31">
-
         <!-- 초기 화면: 로그인 액티비티 -->
         <activity
             android:name=".LoginActivity"
@@ -22,22 +21,29 @@
                 <category android:name="android.intent.category.LAUNCHER" />
             </intent-filter>
         </activity>
-
         <!-- 회원가입 액티비티 -->
         <activity
             android:name=".RegisterActivity"
             android:exported="true" />
-
         <!-- 메인 액티비티 (로그인 후 이동) -->
         <activity
-            android:name=".MainActivity"
+            android:name=".AddGoalActivity"
             android:exported="true" />
-
         <!-- 통계 액티비티 -->
         <activity
             android:name=".StatisticsActivity"
             android:exported="true" />
+        <activity
+            android:name=".GoalDetailsActivity"
+            android:exported="true" />
+        <activity
+            android:name=".AlarmSetting"
+            android:exported="true" />
+        <activity
+            android:name=".GoalcheckMainActivity"
+            android:exported="true" />
     </application>
+
 
 </manifest>
 
