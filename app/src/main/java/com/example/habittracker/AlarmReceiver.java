@@ -1,5 +1,6 @@
 package com.example.habittracker;
 
+import android.annotation.SuppressLint;
 import android.app.NotificationChannel;
 import android.app.NotificationManager;
 import android.content.BroadcastReceiver;
@@ -11,6 +12,7 @@ import androidx.core.app.NotificationCompat;
 
 public class AlarmReceiver extends BroadcastReceiver {
 
+    @SuppressLint("NotificationPermission")
     @Override
     public void onReceive(Context context, Intent intent) {
         // 전달받은 goal_id, day, type 추출

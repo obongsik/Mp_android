@@ -105,6 +105,12 @@
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
             android:text="알림 설정" />
+
+        <Button
+            android:id="@+id/btnCancelAlarm"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:text="알림 설정 취소" />
     </LinearLayout>
 
 
