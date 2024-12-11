@@ -114,10 +114,16 @@ public class AlarmSetting extends AppCompatActivity {
         // 알림 설정 버튼
         btnSetAlarm.setOnClickListener(v -> {
             if (rdoWeek.isChecked()) {
-                setAlarms();
+                setAlarms(); // 요일별 알람 설정
             } else if (rdoDay.isChecked()) {
-                setDailyAlarm();
+                setDailyAlarm(); // 매일 알람 설정
             }
+
+            // 알림 설정 완료 후 GoalDetailsActivity로 이동
+            Intent intent = new Intent(AlarmSetting.this, GoalDetailsActivity.class);
+            intent.putExtra("goal_id", goalId); // goal_id 전달 (선택 사항)
+            startActivity(intent);
+            finish(); // 현재 Activity 종료
         });
 
         timePicker.setOnTimeChangedListener((view, hourOfDay, minute) -> updateDateTimeText());
