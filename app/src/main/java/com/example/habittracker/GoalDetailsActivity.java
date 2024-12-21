@@ -3,12 +3,19 @@ package com.example.habittracker;
 import android.database.Cursor;
 import android.database.sqlite.SQLiteDatabase;
 import android.os.Bundle;
+import android.widget.Button;
 import android.widget.TextView;
-
+import android.content.Intent;
 import androidx.appcompat.app.AppCompatActivity;
+import androidx.recyclerview.widget.LinearLayoutManager;
+import androidx.recyclerview.widget.RecyclerView;
+import java.util.List;
+import java.util.ArrayList;
 
 public class GoalDetailsActivity extends AppCompatActivity {
-    private TextView tvHabitDetails;
+    private RecyclerView goalRecyclerView;
+    private GoalAdapter goalAdapter;
+    private Button back;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -16,10 +23,23 @@ public class GoalDetailsActivity extends AppCompatActivity {
         setContentView(R.layout.activity_goal_details);
 
         // UI 요소 초기화
-        tvHabitDetails = findViewById(R.id.tv_habit_details);
+        goalRecyclerView = findViewById(R.id.goalRecyclerView);
+        back = findViewById(R.id.btn_back);
+
+        goalRecyclerView.setLayoutManager(new LinearLayoutManager(this));
+        goalAdapter = new GoalAdapter(new ArrayList<>());
+        goalRecyclerView.setAdapter(goalAdapter);
+
 
         // 데이터베이스에서 데이터를 가져와 TextView에 표시
         loadHabitsFromDatabase();
+
+        back.setOnClickListener(v -> {
+            // AddGoalActivity로 이동하는 Intent 생성
+            Intent intent = new Intent(GoalDetailsActivity.this, AddGoalActivity.class);
+            startActivity(intent);
+            finish();
+        });
     }
 
     private void loadHabitsFromDatabase() {
@@ -33,7 +53,6 @@ public class GoalDetailsActivity extends AppCompatActivity {
             String userId = userManager.getUserId();
 
             if (userId == null) {
-                tvHabitDetails.setText("로그인 정보를 확인할 수 없습니다.");
                 return;
             }
 
@@ -45,21 +64,23 @@ public class GoalDetailsActivity extends AppCompatActivity {
                     new String[]{userId}
             );
 
-            StringBuilder habitDetails = new StringBuilder();
+            List<String> goalList = new ArrayList<>();
 
-            // 데이터가 없을 경우 처리
-            if (cursor.getCount() == 0) {
-                habitDetails.append("No habits found for the current user.\n");
-            } else {
-                // 데이터 읽기
-                while (cursor.moveToNext()) {
-                    String habitName = cursor.getString(cursor.getColumnIndex("goal_name"));
-                    habitDetails.append("Habit Name: ").append(habitName).append("\n");
+            // 데이터 읽기
+            while (cursor.moveToNext()) {
+                int columnIndex = cursor.getColumnIndex("goal_name");
+                if (columnIndex != -1) {
+                    String habitName = cursor.getString(columnIndex);
+                    goalList.add(habitName);
                 }
             }
-            tvHabitDetails.setText(habitDetails.toString());
+
+            // 어댑터에 데이터 설정
+            goalAdapter = new GoalAdapter(new ArrayList<>(goalList));
+            goalRecyclerView.setAdapter(goalAdapter);
+
         } catch (Exception e) {
-            tvHabitDetails.setText("Error loading data: " + e.getMessage());
+            e.printStackTrace();
         } finally {
             if (cursor != null) cursor.close();
             if (db != null) db.close();

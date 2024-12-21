@@ -53,11 +53,6 @@
             android:name=".AlarmSetting"
             android:exported="true" />
 
-        <!-- 목표 체크 메인 액티비티 -->
-        <activity
-            android:name=".GoalcheckMainActivity"
-            android:exported="true" />
-
     </application>
 
 </manifest>

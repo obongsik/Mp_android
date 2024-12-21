@@ -5,17 +5,22 @@ import android.view.View;
 import android.view.ViewGroup;
 import android.widget.CheckBox;
 import android.widget.TextView;
+import android.widget.Toast;
 
 import androidx.annotation.NonNull;
 import androidx.recyclerview.widget.RecyclerView;
 import java.util.ArrayList;
+import java.util.List;
 
 public class GoalAdapter extends RecyclerView.Adapter<GoalAdapter.GoalViewHolder> {
 
-    private final ArrayList<String> goalList;
+    private List<String> goalList;
+    private HabitDatabaseHelper dbHelper;
 
     public GoalAdapter(ArrayList<String> goalList) {
         this.goalList = goalList;
+        this.dbHelper = dbHelper;
+        notifyDataSetChanged();
     }
 
     @NonNull
@@ -32,6 +37,7 @@ public class GoalAdapter extends RecyclerView.Adapter<GoalAdapter.GoalViewHolder
         // 현재 목표 가져오기
         String goal = goalList.get(position);
         holder.goalText.setText(goal);
+        holder.goalCheckBox.setChecked(goal.isEmpty());
 
         // 체크박스 상태 초기화
         holder.goalCheckBox.setChecked(false);
@@ -40,9 +46,11 @@ public class GoalAdapter extends RecyclerView.Adapter<GoalAdapter.GoalViewHolder
         holder.goalCheckBox.setOnCheckedChangeListener((buttonView, isChecked) -> {
             if (isChecked) {
                 // 목표가 완료되었을 때의 동작
-                System.out.println("Goal checked: " + goal);
+                Toast.makeText(holder.itemView.getContext(), "목표를 달성했습니다!!!", Toast.LENGTH_SHORT).show();
+                //dbHelper.
             } else {
                 // 목표가 미완료 상태로 돌아갔을 때
+                Toast.makeText(holder.itemView.getContext(), "목표 달성 취소 .. ", Toast.LENGTH_SHORT).show();
                 System.out.println("Goal unchecked: " + goal);
             }
         });
@@ -60,7 +68,7 @@ public class GoalAdapter extends RecyclerView.Adapter<GoalAdapter.GoalViewHolder
 
         public GoalViewHolder(@NonNull View itemView) {
             super(itemView);
-            goalText = itemView.findViewById(R.id.goalText); // `goal_item.xml`의 TextView
+            goalText =itemView.findViewById(R.id.goalText);
             goalCheckBox = itemView.findViewById(R.id.goalCheckBox); // `goal_item.xml`의 CheckBox
         }
     }

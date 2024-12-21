@@ -11,14 +11,22 @@ import android.widget.Switch;
 import android.widget.Toast;
 
 import androidx.appcompat.app.AppCompatActivity;
+import androidx.recyclerview.widget.LinearLayoutManager;
+import androidx.recyclerview.widget.RecyclerView;
+
+import java.util.ArrayList;
+
 public class AddGoalActivity extends AppCompatActivity {
     // UI 요소 선언
     private EditText etGoalName, etTargetCount, etStartDate, etEndDate; // 목표 이름, 반복 횟수, 시작/종료 날짜 입력 필드
     private Switch swReminderEnabled; // 알림 활성화 여부 스위치
     private CheckBox cbMonday, cbTuesday, cbWednesday, cbThursday, cbFriday, cbSaturday, cbSunday; // 요일 선택 체크박스
-    private Button btnSaveHabit; // 목표 저장 버튼
+    private Button btnSaveHabit, btnViewGoals, btnViewStatistics; // 목표 저장 버튼
     private MyDatabaseHelper dbHelper; // 데이터베이스 헬퍼 클래스
     private UserManager userManager; // 로그인 상태 및 사용자 정보를 관리하는 클래스
+    private RecyclerView goalRecyclerView;
+    private com.example.habittracker.GoalAdapter goalAdapter;
+    private ArrayList<String> goalList;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -50,16 +58,27 @@ public class AddGoalActivity extends AppCompatActivity {
         cbSaturday = findViewById(R.id.cb_saturday);
         cbSunday = findViewById(R.id.cb_sunday);
         btnSaveHabit = findViewById(R.id.btn_save_habit);
+        btnViewGoals = findViewById(R.id.btn_view_your_goals);
+        btnViewStatistics = findViewById(R.id.btn_view_statistics);
+
         dbHelper = new MyDatabaseHelper(this);
 
-        // 저장 버튼 클릭 이벤트
+        goalList = new ArrayList<>();
+        goalAdapter = new com.example.habittracker.GoalAdapter(goalList);
+
+        goalRecyclerView = findViewById(R.id.goalRecyclerView);
+        goalRecyclerView.setLayoutManager(new LinearLayoutManager(this));
+        goalRecyclerView.setAdapter(goalAdapter);
+
         // 저장 버튼 클릭 이벤트
         btnSaveHabit.setOnClickListener(v -> {
             int goalId = saveHabit(); // 목표 저장 및 goal_id 반환
             if (goalId != -1) {
-                // 목표 저장 성공 시 항상 GoalDetailsActivity로 이동
-                Intent intent = new Intent(AddGoalActivity.this, GoalDetailsActivity.class);
-                startActivity(intent);
+
+                goalList.add(0, etGoalName.getText().toString() + etTargetCount.getText().toString() + " 번 반복");
+                goalAdapter.notifyItemInserted(0); // RecyclerView 업데이트
+                // RecyclerView를 맨 위로 스크롤
+                goalRecyclerView.scrollToPosition(0);
 
                 // 추가적으로 스위치가 켜져 있을 경우 AlarmSetting으로 이동
                 if (swReminderEnabled.isChecked()) {
@@ -73,8 +92,19 @@ public class AddGoalActivity extends AppCompatActivity {
             }
         });
 
+        btnViewGoals.setOnClickListener(v -> {
+            Intent intent = new Intent(AddGoalActivity.this, GoalDetailsActivity.class);
+            startActivity(intent);
+            finish();
+        });
 
+        btnViewStatistics.setOnClickListener(v -> {
+            Intent intent = new Intent(AddGoalActivity.this, StatisticsActivity.class);
+            startActivity(intent);
+            finish();
+        });
     }
+
 
     // 요일 데이터 가져오기 메소드
     // 각 요일의 선택 상태를 "1" 또는 "0" 형식의 문자열로 변환
