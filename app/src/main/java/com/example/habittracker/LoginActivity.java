@@ -43,7 +43,7 @@ public class LoginActivity extends AppCompatActivity {
                 }
                 cursor.close();
                 // MainActivity로 이동
-                Intent intent = new Intent(LoginActivity.this, AddGoalActivity.class);
+                Intent intent = new Intent(LoginActivity.this, MainActivity.class);
                 startActivity(intent);
                 finish();
             } else {
