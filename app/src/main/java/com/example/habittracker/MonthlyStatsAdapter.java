@@ -1,5 +1,6 @@
 package com.example.habittracker;
 
+import android.annotation.SuppressLint;
 import android.content.Context;
 import android.database.Cursor;
 import android.view.LayoutInflater;
@@ -27,8 +28,8 @@ public class MonthlyStatsAdapter extends RecyclerView.Adapter<MonthlyStatsAdapte
     @Override
     public void onBindViewHolder(ViewHolder holder, int position) {
         if (cursor != null && cursor.moveToPosition(position)) {
-            String month = cursor.getString(cursor.getColumnIndex("month"));
-            int achievementCount = cursor.getInt(cursor.getColumnIndex("achievement_count"));
+            @SuppressLint("Range") String month = cursor.getString(cursor.getColumnIndex("month"));
+            @SuppressLint("Range") int achievementCount = cursor.getInt(cursor.getColumnIndex("achievement_count"));
             holder.monthTextView.setText("Month " + month);
             holder.achievementCountTextView.setText("Achievements: " + achievementCount);
         }

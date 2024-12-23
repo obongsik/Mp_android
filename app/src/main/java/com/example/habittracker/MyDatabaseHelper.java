@@ -1,6 +1,5 @@
 package com.example.habittracker;
 
-
 import android.content.Context;
 import android.database.sqlite.SQLiteDatabase;
 import android.database.sqlite.SQLiteOpenHelper;
@@ -8,82 +7,115 @@ import android.database.sqlite.SQLiteOpenHelper;
 public class MyDatabaseHelper extends SQLiteOpenHelper {
     // Database Name and Version
     private static final String DATABASE_NAME = "HabitTracker.db";
-    private static final int DATABASE_VERSION = 6; // 새로운 테이블 구조에 따라 버전 증가
+    private static final int DATABASE_VERSION = 6; // Increment as per new changes
 
-    // Constructor
+    // Table and Columns for User
+    public static final String TABLE_USER = "User";
+    public static final String COLUMN_USER_ID = "user_id";
+    public static final String COLUMN_USERNAME = "username";
+    public static final String COLUMN_EMAIL = "email";
+    public static final String COLUMN_PASSWORD = "password";
+
+    // Table and Columns for Goal
+    public static final String TABLE_GOAL = "Goal";
+    public static final String COLUMN_GOAL_ID = "goal_id";
+    public static final String COLUMN_GOAL_NAME = "goal_name";
+    public static final String COLUMN_CREATION_DATE = "creation_date";
+    public static final String COLUMN_START_DATE = "start_date";
+    public static final String COLUMN_END_DATE = "end_date";
+    public static final String COLUMN_REPEAT_DAYS = "repeat_days";
+    public static final String COLUMN_TARGET_COUNT = "target_count";
+    public static final String COLUMN_REMINDER_ENABLED = "reminder_enabled";
+
+    // Table and Columns for Achievement_Check
+    public static final String TABLE_ACHIEVEMENT_CHECK = "Achievement_Check";
+    public static final String COLUMN_ACHIEVEMENT_ID = "achievement_id";
+    public static final String COLUMN_CHECK_DATE = "check_date";
+    public static final String COLUMN_ACHIEVED = "achieved";
+
+    // Table and Columns for Statistics
+    public static final String TABLE_STATISTICS = "Statistics";
+    public static final String COLUMN_STATISTICS_ID = "statistics_id";
+    public static final String COLUMN_TOTAL_GOAL_DAYS = "total_goal_days";
+    public static final String COLUMN_ACHIEVED_DAYS = "achieved_days";
+    public static final String COLUMN_ACHIEVEMENT_RATE = "achievement_rate";
+
+    // Table and Columns for Reminder
+    public static final String TABLE_REMINDER = "Reminder";
+    public static final String COLUMN_REMINDER_ID = "reminder_id";
+    public static final String COLUMN_REMINDER_TIME = "reminder_time";
+    public static final String COLUMN_FREQUENCY = "frequency";
+    public static final String COLUMN_IS_ACTIVE = "is_active";
+
     public MyDatabaseHelper(Context context) {
         super(context, DATABASE_NAME, null, DATABASE_VERSION);
     }
 
-    // Create Tables
     @Override
     public void onCreate(SQLiteDatabase db) {
-        // 외래 키 활성화
+        // Enable foreign keys
         db.execSQL("PRAGMA foreign_keys=ON;");
 
-        // User Table
-        db.execSQL("CREATE TABLE User (" +
-                "user_id INTEGER PRIMARY KEY AUTOINCREMENT, " +
-                "username TEXT NOT NULL, " +
-                "email TEXT NOT NULL, " +  // 이메일 컬럼 추가
-                "password TEXT NOT NULL);");
+        // Create User table
+        db.execSQL("CREATE TABLE " + TABLE_USER + " (" +
+                COLUMN_USER_ID + " INTEGER PRIMARY KEY AUTOINCREMENT, " +
+                COLUMN_USERNAME + " TEXT NOT NULL, " +
+                COLUMN_EMAIL + " TEXT NOT NULL, " +
+                COLUMN_PASSWORD + " TEXT NOT NULL);");
 
-        // Goal Table
-        db.execSQL("CREATE TABLE Goal (" +
-                "goal_id INTEGER PRIMARY KEY AUTOINCREMENT, " +
-                "user_id INTEGER NOT NULL, " +
-                "goal_name TEXT NOT NULL, " +
-                "creation_date DATE NOT NULL DEFAULT (date('now')), " +
-                "start_date DATE NOT NULL, " +
-                "end_date DATE, " +
-                "repeat_days TEXT NOT NULL, " + // 반복 요일
-                "target_count INTEGER NOT NULL, " + // 하루 반복 횟수
-                "reminder_enabled INTEGER NOT NULL, " +
-                "FOREIGN KEY (user_id) REFERENCES User(user_id));");
+        // Create Goal table
+        db.execSQL("CREATE TABLE " + TABLE_GOAL + " (" +
+                COLUMN_GOAL_ID + " INTEGER PRIMARY KEY AUTOINCREMENT, " +
+                COLUMN_USER_ID + " INTEGER NOT NULL, " +
+                COLUMN_GOAL_NAME + " TEXT NOT NULL, " +
+                COLUMN_CREATION_DATE + " DATE NOT NULL DEFAULT (date('now')), " +
+                COLUMN_START_DATE + " DATE NOT NULL, " +
+                COLUMN_END_DATE + " DATE, " +
+                COLUMN_REPEAT_DAYS + " TEXT NOT NULL, " +
+                COLUMN_TARGET_COUNT + " INTEGER NOT NULL, " +
+                COLUMN_REMINDER_ENABLED + " INTEGER NOT NULL, " +
+                "FOREIGN KEY (" + COLUMN_USER_ID + ") REFERENCES " + TABLE_USER + "(" + COLUMN_USER_ID + "));");
 
-        // Achievement_Check Table
-        db.execSQL("CREATE TABLE Achievement_Check (" +
-                "achievement_id INTEGER PRIMARY KEY AUTOINCREMENT, " +
-                "goal_id INTEGER NOT NULL, " +
-                "check_date DATE NOT NULL, " +
-                "achieved INTEGER NOT NULL, " +
-                "FOREIGN KEY (goal_id) REFERENCES Goal(goal_id));");
+        // Create Achievement_Check table
+        db.execSQL("CREATE TABLE " + TABLE_ACHIEVEMENT_CHECK + " (" +
+                COLUMN_ACHIEVEMENT_ID + " INTEGER PRIMARY KEY AUTOINCREMENT, " +
+                COLUMN_GOAL_ID + " INTEGER NOT NULL, " +
+                COLUMN_CHECK_DATE + " DATE NOT NULL, " +
+                COLUMN_ACHIEVED + " INTEGER NOT NULL, " +
+                "FOREIGN KEY (" + COLUMN_GOAL_ID + ") REFERENCES " + TABLE_GOAL + "(" + COLUMN_GOAL_ID + "));");
 
-        // Statistics Table
-        db.execSQL("CREATE TABLE Statistics (" +
-                "statistics_id INTEGER PRIMARY KEY AUTOINCREMENT, " +
-                "user_id INTEGER NOT NULL, " +
-                "goal_id INTEGER NOT NULL, " +
-                "total_goal_days INTEGER NOT NULL, " +
-                "achieved_days INTEGER NOT NULL, " +
-                "achievement_rate REAL NOT NULL, " + // DECIMAL(5,2)를 REAL로 변환
-                "FOREIGN KEY (user_id) REFERENCES User(user_id), " +
-                "FOREIGN KEY (goal_id) REFERENCES Goal(goal_id));");
+        // Create Statistics table
+        db.execSQL("CREATE TABLE " + TABLE_STATISTICS + " (" +
+                COLUMN_STATISTICS_ID + " INTEGER PRIMARY KEY AUTOINCREMENT, " +
+                COLUMN_USER_ID + " INTEGER NOT NULL, " +
+                COLUMN_GOAL_ID + " INTEGER NOT NULL, " +
+                COLUMN_TOTAL_GOAL_DAYS + " INTEGER NOT NULL, " +
+                COLUMN_ACHIEVED_DAYS + " INTEGER NOT NULL, " +
+                COLUMN_ACHIEVEMENT_RATE + " REAL NOT NULL, " +
+                "FOREIGN KEY (" + COLUMN_USER_ID + ") REFERENCES " + TABLE_USER + "(" + COLUMN_USER_ID + "), " +
+                "FOREIGN KEY (" + COLUMN_GOAL_ID + ") REFERENCES " + TABLE_GOAL + "(" + COLUMN_GOAL_ID + "));");
 
-        // Reminder Table
-        db.execSQL("CREATE TABLE Reminder (" +
-                "reminder_id INTEGER PRIMARY KEY AUTOINCREMENT, " +
-                "goal_id INTEGER NOT NULL, " +
-                "reminder_time TIME NOT NULL, " +
-                "frequency TEXT NOT NULL, " +
-                "is_active INTEGER NOT NULL, " +
-                "FOREIGN KEY (goal_id) REFERENCES Goal(goal_id));");
+        // Create Reminder table
+        db.execSQL("CREATE TABLE " + TABLE_REMINDER + " (" +
+                COLUMN_REMINDER_ID + " INTEGER PRIMARY KEY AUTOINCREMENT, " +
+                COLUMN_GOAL_ID + " INTEGER NOT NULL, " +
+                COLUMN_REMINDER_TIME + " TEXT NOT NULL, " +
+                COLUMN_FREQUENCY + " TEXT NOT NULL, " +
+                COLUMN_IS_ACTIVE + " INTEGER DEFAULT 1, " +
+                "FOREIGN KEY (" + COLUMN_GOAL_ID + ") REFERENCES " + TABLE_GOAL + "(" + COLUMN_GOAL_ID + "));");
     }
 
-
-    // Upgrade Database
     @Override
     public void onUpgrade(SQLiteDatabase db, int oldVersion, int newVersion) {
-        // 기존 테이블 삭제
-        db.execSQL("DROP TABLE IF EXISTS Reminder");
-        db.execSQL("DROP TABLE IF EXISTS Statistics");
-        db.execSQL("DROP TABLE IF EXISTS Achievement_Check");
-        db.execSQL("DROP TABLE IF EXISTS Goal");
-        db.execSQL("DROP TABLE IF EXISTS User");
-
-        // 새 테이블 생성
-        onCreate(db);
+        if (oldVersion < newVersion) {
+            // Drop old tables
+            db.execSQL("DROP TABLE IF EXISTS " + TABLE_REMINDER);
+            db.execSQL("DROP TABLE IF EXISTS " + TABLE_STATISTICS);
+            db.execSQL("DROP TABLE IF EXISTS " + TABLE_ACHIEVEMENT_CHECK);
+            db.execSQL("DROP TABLE IF EXISTS " + TABLE_GOAL);
+            db.execSQL("DROP TABLE IF EXISTS " + TABLE_USER);
+            // Recreate tables
+            onCreate(db);
+        }
     }
-
 }
-

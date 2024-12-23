@@ -36,14 +36,14 @@ public class AlarmSetting extends AppCompatActivity {
     private ArrayList<Button> dayButtons = new ArrayList<>(); // 요일 버튼 리스트
 
     private int goalId; // 전달받은 목표 ID
-    private NotificationDatabaseHelper dbHelper; // 데이터베이스 헬퍼 클래스
+    private MyDatabaseHelper dbHelper; // 데이터베이스 헬퍼 클래스
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_alarm);
 
-        dbHelper = new NotificationDatabaseHelper(this);
+        dbHelper = new MyDatabaseHelper(this);
 
         // 전달받은 목표 ID 확인
         goalId = getIntent().getIntExtra("goal_id", -1);
@@ -53,8 +53,8 @@ public class AlarmSetting extends AppCompatActivity {
             return;
         }
 
-        initializeViews();
-        setupListeners();
+        initializeViews(); //UI요소 초기화
+        setupListeners(); //버튼 설정
     }
 
     private void initializeViews() {
@@ -129,19 +129,6 @@ public class AlarmSetting extends AppCompatActivity {
         timePicker.setOnTimeChangedListener((view, hourOfDay, minute) -> updateDateTimeText());
     }
 
-    private void saveAlarmToDatabase(String reminderTime, int frequency, boolean isActive) {
-        SQLiteDatabase db = dbHelper.getWritableDatabase();
-        ContentValues values = new ContentValues();
-        values.put(NotificationDatabaseHelper.COLUMN_GOAL_ID, goalId);
-        values.put(NotificationDatabaseHelper.COLUMN_TIME, reminderTime);
-        values.put(NotificationDatabaseHelper.COLUMN_FREQUENCY, frequency);
-        values.put("is_active", isActive ? 1 : 0);
-
-        long rowId = db.insert(NotificationDatabaseHelper.TABLE_REMINDER, null, values);
-        if (rowId > 0) {
-            Toast.makeText(this, "알림 설정이 저장되었습니다.", Toast.LENGTH_SHORT).show();
-        }
-    }
 
     private void setViewVisibility(boolean showAlarmSettings, boolean showDayButtons) {
         int alarmVisibility = showAlarmSettings ? View.VISIBLE : View.GONE;
@@ -159,6 +146,22 @@ public class AlarmSetting extends AppCompatActivity {
     private void toggleDaySelection(int index, Button button) {
         daySelection[index] = 1 - daySelection[index];
         button.setBackgroundColor(daySelection[index] == 1 ? Color.GREEN : Color.LTGRAY);
+    }
+
+    private void saveAlarmToDatabase(String reminderTime, String frequency, boolean isActive) {
+        SQLiteDatabase db = dbHelper.getWritableDatabase();
+        ContentValues values = new ContentValues();
+        values.put(MyDatabaseHelper.COLUMN_GOAL_ID, goalId); // goal_id 컬럼
+        values.put(MyDatabaseHelper.COLUMN_REMINDER_TIME, reminderTime); // reminder_time 컬럼
+        values.put(MyDatabaseHelper.COLUMN_FREQUENCY, frequency); // frequency 컬럼
+        values.put(MyDatabaseHelper.COLUMN_IS_ACTIVE, isActive ? 1 : 0); // is_active 컬럼
+
+        long rowId = db.insert(MyDatabaseHelper.TABLE_REMINDER, null, values);
+        if (rowId > 0) {
+            Toast.makeText(this, "알림 설정이 저장되었습니다.", Toast.LENGTH_SHORT).show();
+        } else {
+            Toast.makeText(this, "알림 설정 저장에 실패했습니다.", Toast.LENGTH_SHORT).show();
+        }
     }
 
     private void setAlarms() {
@@ -189,6 +192,10 @@ public class AlarmSetting extends AppCompatActivity {
                 if (alarmManager != null) {
                     alarmManager.setExact(AlarmManager.RTC_WAKEUP, calendar.getTimeInMillis(), pendingIntent);
                 }
+
+                // 데이터베이스에 저장
+                String reminderTime = String.format("%02d:%02d", hour, minute);
+                saveAlarmToDatabase(reminderTime, "weekly", true); // 주간 알림 저장
             }
         }
     }
@@ -219,8 +226,9 @@ public class AlarmSetting extends AppCompatActivity {
             alarmManager.setExact(AlarmManager.RTC_WAKEUP, calendar.getTimeInMillis(), pendingIntent);
         }
 
-        String time = String.format("%02d:%02d", hour, minute);
-        saveAlarmToDatabase(time, 1, true);
+        // 데이터베이스에 저장
+        String reminderTime = String.format("%02d:%02d", hour, minute);
+        saveAlarmToDatabase(reminderTime, "daily", true); // 일일 알림 저장
     }
 
     private int getDayOfWeek(int index) {

@@ -2,6 +2,7 @@
 <manifest xmlns:android="http://schemas.android.com/apk/res/android"
     xmlns:tools="http://schemas.android.com/tools">
 
+    <uses-permission android:name="android.permission.POST_NOTIFICATIONS" />
     <application
         android:allowBackup="true"
         android:dataExtractionRules="@xml/data_extraction_rules"
@@ -51,6 +52,11 @@
         <!-- 알림 설정 액티비티 -->
         <activity
             android:name=".AlarmSetting"
+            android:exported="true" />
+
+        <!-- 알림 울림 액티비티 -->
+        <activity
+            android:name=".AlarmReceiver"
             android:exported="true" />
 
     </application>
